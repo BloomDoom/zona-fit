@@ -102,8 +102,8 @@ export default function Insights() {
               </section>
 
               <section className="section">
-                <h2>Por socio</h2>
-                <p className="muted">Los que más faltaron, primero.</p>
+                <h2>Por chica</h2>
+                <p className="muted">Las que más faltaron, primero.</p>
                 <ul className="card-list">
                   {data.members
                     .filter((m) => m.member.active)

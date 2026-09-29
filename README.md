@@ -121,5 +121,7 @@ exist are skipped, so importing the same file twice is safe.
   a `deleted_at` date instead, and the database doesn't even allow deleting them.
 - **Updates:** after a deploy, the phone picks up the new version the next time
   the app is opened (sometimes it takes a second open).
-- **Logo:** the icons in `public/` are a "ZF" placeholder. Replace them (same
-  names and sizes) and the colors at the top of `src/index.css` with Zona Fit's.
+- **Logo:** the icons in `public/` and `logo-mark.png` (the woman on the round
+  Inicio button, white on transparent) were cut from a photo of the logo. If a
+  cleaner logo file turns up, replace them with the same names and sizes. The
+  colors (black and purple) are at the top of `src/index.css`.

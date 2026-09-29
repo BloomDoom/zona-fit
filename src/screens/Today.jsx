@@ -118,7 +118,7 @@ function SessionCard({ session: s }) {
           {s.group.name}
           {!s.slot_id && <span className="badge">Extra</span>}
         </span>
-        <span className="muted">{plural(s.memberCount, 'socio', 'socios')}</span>
+        <span className="muted">{plural(s.memberCount, 'chica', 'chicas')}</span>
         {status}
       </span>
     </Link>

@@ -76,7 +76,7 @@ function GroupList({ groups }) {
             <Link to={`/groups/${group.id}`} className="card">
               <span className="card-title">{group.name}</span>
               <span>{slotsSummary(group.group_slots)}</span>
-              <span className="muted">{plural(memberCount, 'socio', 'socios')}</span>
+              <span className="muted">{plural(memberCount, 'chica', 'chicas')}</span>
             </Link>
           </li>
         )

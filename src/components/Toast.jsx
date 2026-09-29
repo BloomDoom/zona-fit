@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState } from 'react'
 
-// A small message at the bottom of the screen ("Guardado", "Socio dado
+// A small message at the bottom of the screen ("Guardado", "Chica dada
 // de baja · Deshacer"). We use Undo instead of "¿Estás segura?" dialogs.
 //
 // Any screen can show one:

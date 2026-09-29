@@ -1,33 +1,36 @@
 /* ───────── Colors and sizes used everywhere. Change them here.
-   Placeholder gym colors (orange + charcoal) until Zona Fit's logo
-   arrives. Text colors keep 4.5:1 contrast or more on their backgrounds. */
+   Zona Fit: black with the purple of the logo's arc. The app is always
+   dark. Text colors keep 4.5:1 contrast or more on their backgrounds. */
 :root {
-  --bg: #f4f3f1;           /* light warm grey page background */
-  --surface: #ffffff;      /* cards */
-  --text: #1f2327;         /* near-black */
-  --muted: #545b61;        /* secondary text (6.6:1 on white) */
-  --border: #e0ddd8;
-  --primary: #c2410c;      /* orange: buttons, links, active tab (5.2:1 with white) */
-  --primary-dark: #8a2e08; /* orange text on a soft orange background */
+  --bg: #0d0d10;           /* near-black page background */
+  --surface: #19191e;      /* cards */
+  --text: #f2f2f4;         /* near-white */
+  --muted: #a3a3ad;        /* secondary text (7:1 on the cards) */
+  --border: #34343d;
+  --primary: #8e44dd;      /* purple: buttons, Inicio circle, progress bars (5.2:1 with white) */
+  --primary-ink: #c89bf7;  /* purple for text: links, active tab (7:1 on the cards) */
+  --primary-dark: #dcbcfb; /* purple text on a soft purple background */
   --primary-text: #ffffff;
-  --danger: #b42318;       /* errors, overdue, absent */
+  --danger: #ff9b9b;       /* errors, overdue, absent (text and outlines) */
 
-  /* Soft backgrounds + the dark text that goes on each */
-  --primary-soft: #fdebdf; /* hints, banners, totals */
-  --accent-soft: #e5ebf3;  /* class times */
-  --accent-text: #22406a;
-  --warn-soft: #fff1d6;    /* unpaid, running low */
-  --warn-text: #7a4a00;
-  --yellow-soft: #fff4d2;  /* birthdays */
-  --yellow: #f0cb6a;
-  --ok-soft: #e2f0dc;      /* present, paid */
-  --ok-text: #2c6534;
-  --bad-soft: #fbe1dc;     /* absent, overdue, out of stock */
-  --track: #e8e5e0;        /* empty part of progress bars */
-  --pressed: #f1eeea;      /* a card while it's being tapped */
+  /* Soft backgrounds + the light text that goes on each */
+  --primary-soft: #2a1a3d; /* hints, banners, totals */
+  --accent-soft: #1a2638;  /* class times */
+  --accent-text: #a9c8f5;
+  --warn-soft: #3a2d12;    /* unpaid, running low */
+  --warn-text: #f5c66b;
+  --yellow-soft: #33290f;  /* birthdays */
+  --yellow: #b8932e;
+  --ok-soft: #16301d;      /* present, paid */
+  --ok-text: #8fdca0;
+  --bad-soft: #3a1717;     /* absent, overdue, out of stock */
+  --track: #2e2e36;        /* empty part of progress bars */
+  --pressed: #24242b;      /* a card while it's being tapped */
 
-  /* Soft shadow instead of borders around cards */
-  --shadow: 0 1px 2px rgba(20, 20, 20, 0.06), 0 6px 18px rgba(20, 20, 20, 0.07);
+  /* On black, a thin border separates cards better than a shadow */
+  --shadow: 0 0 0 1px #2a2a31, 0 6px 18px rgba(0, 0, 0, 0.35);
+
+  color-scheme: dark;
 
   --tap: 48px;            /* minimum height of anything you can tap */
   --tab-bar-height: 64px;
@@ -133,7 +136,7 @@ h1 {
   padding: 0.25rem 1rem;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
-  color: var(--primary);
+  color: var(--primary-ink);
   font-size: 1.0625rem;
   font-weight: 600;
   text-align: left;
@@ -171,8 +174,8 @@ textarea {
 
 .btn-secondary {
   background: var(--surface);
-  color: var(--primary);
-  border: 2px solid var(--primary);
+  color: var(--primary-ink);
+  border: 2px solid var(--primary-ink);
 }
 
 .btn-icon {
@@ -233,7 +236,7 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--primary);
+  border-color: var(--primary-ink);
 }
 
 /* ───────── Login */
@@ -255,7 +258,7 @@ textarea:focus {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--danger);
+  background: #b42318; /* a deep red: --danger is light, made for text */
   color: #fff;
   padding: 0.75rem 1rem;
   text-align: center;
@@ -307,7 +310,7 @@ textarea:focus {
 
 /* NavLink adds the "active" class to the current tab. */
 .tab.active {
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 
 /* ───────── Phase 2: lists, cards, forms */
@@ -343,7 +346,7 @@ h2 {
 }
 
 a {
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 
 /* Links that look like buttons */
@@ -480,7 +483,7 @@ label.btn-secondary {
   font-weight: 400;
 }
 
-/* Search box + filter on Socios */
+/* Search box + filter on Chicas */
 .filters {
   margin-top: 1rem;
 }
@@ -534,7 +537,7 @@ details summary {
   min-height: var(--tap);
   display: flex;
   align-items: center;
-  color: var(--primary);
+  color: var(--primary-ink);
   font-weight: 600;
   cursor: pointer;
 }
@@ -566,10 +569,10 @@ details summary {
   gap: 1rem;
   padding: 0.5rem 0.5rem 0.5rem 1rem;
   min-height: 56px;
-  background: var(--text);
+  background: #2e2e36; /* a lighter grey, so it stands out from the black page */
   color: #fff;
   border-radius: var(--radius);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 .toast button {
   min-height: var(--tap);
@@ -644,7 +647,7 @@ button.back-link {
   min-width: 3.4em;
   font-size: 1.3rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .session-info {
   display: flex;
@@ -885,7 +888,7 @@ button.back-link {
 /* ───────── Phase 6: accessibility */
 /* A clear outline when moving around with a keyboard (or iOS Full Keyboard Access) */
 :focus-visible {
-  outline: 3px solid var(--primary);
+  outline: 3px solid var(--primary-ink);
   outline-offset: 2px;
 }
 input:focus-visible,
@@ -905,8 +908,8 @@ textarea:focus-visible {
 /* Respect "Bold Text"-style contrast needs: never go lighter than this */
 @media (prefers-contrast: more) {
   :root {
-    --muted: #333333;
-    --border: #8a8478;
+    --muted: #d4d4da;
+    --border: #6b6b76;
   }
   .dimmed {
     opacity: 0.8;
@@ -984,8 +987,8 @@ h2 {
   flex-wrap: wrap;
 }
 
-/* ───────── Socios list */
-/* Search + "+ Add" pinned at the top of the Socios list */
+/* ───────── Chicas list */
+/* Search + "+ Add" pinned at the top of the Chicas list */
 .filters {
   position: sticky;
   top: env(safe-area-inset-top);
@@ -1014,10 +1017,10 @@ h2 {
   align-items: center;
 }
 
-/* A, B, C… headers in the Socios list */
+/* A, B, C… headers in the Chicas list */
 .letter-header {
   margin: 1.25rem 0 -0.5rem;
-  color: var(--primary);
+  color: var(--primary-ink);
   font-size: 1.2rem;
 }
 
@@ -1080,7 +1083,7 @@ h2 {
 .tab-home {
   justify-content: flex-end;
   padding-bottom: 6px;
-  color: var(--primary);
+  color: var(--primary-ink);
 }
 .home-circle {
   display: flex;
@@ -1169,7 +1172,7 @@ h2 {
 .empty {
   border: 2px dashed var(--border);
   border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(25, 25, 30, 0.6);
 }
 
 h1,
@@ -1249,7 +1252,7 @@ textarea {
   color: var(--danger);
 }
 .save-bar {
-  background: linear-gradient(rgba(244, 243, 241, 0), var(--bg) 35%);
+  background: linear-gradient(rgba(13, 13, 16, 0), var(--bg) 35%);
 }
 
 /* The "Everyone is marked present" hint on the class screen */
@@ -1295,20 +1298,26 @@ textarea {
   box-shadow: inset 0 0 0 2px var(--yellow), var(--shadow);
 }
 
-/* Tab bar: white with a soft shadow; Inicio keeps its orange circle */
+/* Tab bar: dark grey; Inicio is a purple circle with the logo's figure */
 .tab-bar {
-  background: var(--surface);
+  background: #141418;
   border-top: 1px solid var(--border);
-  box-shadow: 0 -4px 16px rgba(20, 20, 20, 0.06);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
 }
 .home-circle {
   width: 64px;
   height: 64px;
-  border: 5px solid var(--surface);
-  box-shadow: 0 4px 12px rgba(194, 65, 12, 0.35);
+  border: 5px solid var(--bg);
+  box-shadow: 0 4px 14px rgba(142, 68, 221, 0.45);
 }
 .tab-home.active .home-circle {
-  box-shadow: 0 0 0 3px var(--primary), 0 4px 12px rgba(194, 65, 12, 0.35);
+  box-shadow: 0 0 0 3px var(--primary-ink), 0 4px 14px rgba(142, 68, 221, 0.45);
+}
+/* The woman from the logo (white on transparent), instead of a house icon */
+.home-circle .logo-mark {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
 }
 
 /* Undo message */

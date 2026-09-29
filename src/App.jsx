@@ -30,7 +30,11 @@ export default function App() {
   const { pathname } = useLocation()
 
   // Start every new screen at the top (the browser would keep the old scroll position).
-  useEffect(() => window.scrollTo(0, 0), [pathname])
+  // Braces matter: newer browsers make scrollTo return a Promise, and React
+  // would try to call whatever the effect returns when the screen changes.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   useEffect(() => {
     if (!isConfigured) return

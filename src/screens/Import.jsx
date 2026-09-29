@@ -12,9 +12,9 @@ import { loadErrorMessage, saveErrorMessage } from '../lib/errors.js'
 // import only the rows without problems.
 
 const KINDS = {
-  plans: { label: 'Planes', plural: 'planes' },
-  groups: { label: 'Clases', plural: 'clases' },
-  members: { label: 'Socios', plural: 'socios' },
+  plans: { label: 'Planes', plural: 'planes', see: 'Verlos' },
+  groups: { label: 'Clases', plural: 'clases', see: 'Verlas' },
+  members: { label: 'Chicas', plural: 'chicas', see: 'Verlas' },
 }
 
 const EXAMPLES = {
@@ -209,7 +209,7 @@ export default function Import() {
       <h1>Importar desde una planilla</h1>
       <p>
         Guardá la planilla como archivo CSV (Google Sheets: Archivo → Descargar → CSV. Excel: Guardar como → CSV).
-        Importá en este orden: primero planes, después clases, después socios.
+        Importá en este orden: primero planes, después clases, después chicas.
       </p>
 
       <div className="btn-row">
@@ -235,7 +235,7 @@ export default function Import() {
       {error && <p className="error" role="alert">{error}</p>}
       {finished !== null && (
         <p className="success" role="status">
-          ¡Listo! Se importaron {finished} {words}. <Link to={seeLink}>Verlos</Link>
+          ¡Listo! Se importaron {finished} {words}. <Link to={seeLink}>{KINDS[kind].see}</Link>
         </p>
       )}
 

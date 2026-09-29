@@ -68,7 +68,7 @@ export default function Payments() {
         <>
           {charges.length === 0 ? (
             <p className="empty">
-              Todavía no hay cuotas este mes. Aparecen para los socios que tienen un plan con precio.
+              Todavía no hay cuotas este mes. Aparecen para las chicas que tienen un plan con precio.
             </p>
           ) : (
             <section className="summary">
@@ -78,7 +78,7 @@ export default function Payments() {
               <div className="progress" aria-hidden="true">
                 <div style={{ width: `${expected ? (collected / expected) * 100 : 0}%` }} />
               </div>
-              <p>{owing === 0 ? '¡Pagaron todos! 🎉' : owing === 1 ? 'Falta que pague 1 socio' : `Faltan que paguen ${owing} socios`}</p>
+              <p>{owing === 0 ? '¡Pagaron todas! 🎉' : owing === 1 ? 'Falta que pague 1 chica' : `Faltan que paguen ${owing} chicas`}</p>
               {byMethod.length > 0 && (
                 <ul className="method-totals" aria-label="Cobrado por forma de pago">
                   {byMethod.map(([method, total]) => (

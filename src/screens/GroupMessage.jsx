@@ -129,14 +129,14 @@ export default function GroupMessage() {
         <summary>{listMade ? 'Lista de difusión: cómo armarla de nuevo' : 'La primera vez: armar la lista de difusión'}</summary>
         <ol className="setup-steps">
           <li>
-            Si hay socios que no están en los contactos del iPhone, guardalos:
+            Si hay chicas que no están en los contactos del iPhone, guardalos:
             <button className="btn-secondary" onClick={saveContacts}>
               Guardar {withNumbers.filter((w) => w.number).length} contactos en el iPhone
             </button>
             <span className="muted">Después elegí “Agregar todos los contactos”. Saltá los que ya tenés, para no duplicarlos.</span>
           </li>
           <li>
-            En WhatsApp abrí <strong>Listas de difusión → Nueva lista</strong>, elegí a los socios de {group.name} y creala.
+            En WhatsApp abrí <strong>Listas de difusión → Nueva lista</strong>, elegí a las chicas de {group.name} y creala.
             Ponele de nombre <strong>{group.name}</strong>.
           </li>
           <li>
@@ -156,7 +156,7 @@ export default function GroupMessage() {
       </details>
 
       <details className="section">
-        <summary>O mandarlo a cada socio uno por uno</summary>
+        <summary>O mandarlo a cada chica una por una</summary>
         <ul className="card-list">
           {members.map((m) => {
             const link = m.phone && text.trim() && whatsappLink(m.phone, text.trim())

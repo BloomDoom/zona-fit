@@ -37,7 +37,7 @@ export default function MemberPayments({ memberId }) {
       {charges && (
         <>
           {charges.length === 0 ? (
-            <p className="empty">Todavía no hay cuotas. Aparecen cuando el socio tiene un plan con precio.</p>
+            <p className="empty">Todavía no hay cuotas. Aparecen cuando la chica tiene un plan con precio.</p>
           ) : (
             <p className={owed > 0 ? 'error' : 'success'}>{owed > 0 ? `Debe ${formatMoney(owed)} en total` : 'No debe nada ✓'}</p>
           )}

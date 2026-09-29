@@ -13,7 +13,7 @@ export function useGoBack(fallback) {
 }
 
 // "‹ Volver" for screens that can be reached from several places
-// (e.g. a member from Socios or from Pagos).
+// (e.g. a member from Chicas or from Pagos).
 export default function BackButton({ fallback }) {
   const goBack = useGoBack(fallback)
   return <button className="back-link" onClick={goBack}>‹ Volver</button>

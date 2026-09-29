@@ -104,14 +104,14 @@ function Attendance({ session, members, absentIds, reload, onSaved }) {
   }
 
   if (members.length === 0) {
-    return <p className="empty">No hay socios anotados en esta clase. Anotalos desde la pestaña Socios.</p>
+    return <p className="empty">No hay chicas anotadas en esta clase. Anotalas desde la pestaña Chicas.</p>
   }
 
   const presentCount = members.length - absent.size
   return (
     <section className="section">
       <p className="hint">
-        Todos están <strong>presentes</strong>. Tocá a los que <strong>faltaron</strong>.
+        Todas están <strong>presentes</strong>. Tocá a las que <strong>faltaron</strong>.
       </p>
       <ul className="roster">
         {members.map((m) => {

@@ -50,13 +50,13 @@ export default function MemberNew() {
 
   return (
     <main className="screen">
-      <Link to="/members" className="back-link">‹ Socios</Link>
-      <h1>Agregar socios</h1>
+      <Link to="/members" className="back-link">‹ Chicas</Link>
+      <h1>Agregar chicas</h1>
       <LoadState {...result} />
 
       {added.length > 0 && (
         <p className="success" role="status">
-          ✓ {added[0].name} agregado{added.length > 1 && ` (van ${added.length})`}. Escribí el siguiente.
+          ✓ {added[0].name} agregada{added.length > 1 && ` (van ${added.length})`}. Escribí el siguiente.
         </p>
       )}
 
@@ -86,7 +86,7 @@ export default function MemberNew() {
 
       {added.length > 0 && (
         <section className="section">
-          <h2>Recién agregados ({added.length})</h2>
+          <h2>Recién agregadas ({added.length})</h2>
           <ul className="row-list">
             {added.map((m) => (
               <li key={m.id}>

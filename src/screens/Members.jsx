@@ -47,7 +47,7 @@ export default function Members() {
 
   return (
     <main className="screen">
-      <h1>Socios</h1>
+      <h1>Chicas</h1>
       <LoadState {...result} />
 
       {result.data && (
@@ -67,10 +67,10 @@ export default function Members() {
                 onChange={(e) => setSearch(e.target.value)}
                 aria-label="Buscar por nombre"
               />
-              <Link to="/members/new" className="btn-primary btn-add" aria-label="Agregar socios">+ Agregar</Link>
+              <Link to="/members/new" className="btn-primary btn-add" aria-label="Agregar chicas">+ Agregar</Link>
             </div>
-            <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Qué socios mostrar">
-              <option value="active">Todos los socios ({result.data.members.filter((m) => m.active).length})</option>
+            <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Qué chicas mostrar">
+              <option value="active">Todas las chicas ({result.data.members.filter((m) => m.active).length})</option>
               {result.data.plans.length > 0 && (
                 <optgroup label="Por plan">
                   {result.data.plans.map((p) => (
@@ -85,12 +85,12 @@ export default function Members() {
                   ))}
                 </optgroup>
               )}
-              <option value="inactive">Dados de baja</option>
+              <option value="inactive">Dadas de baja</option>
             </select>
           </div>
 
           {result.data.members.length === 0 ? (
-            <p className="empty">Todavía no hay socios. Tocá “+ Agregar” para cargar los primeros.</p>
+            <p className="empty">Todavía no hay chicas. Tocá “+ Agregar” para cargar las primeras.</p>
           ) : members.length === 0 ? (
             <p className="empty">Nadie coincide. Probá con otro nombre o filtro.</p>
           ) : (

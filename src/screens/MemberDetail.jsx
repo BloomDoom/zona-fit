@@ -75,7 +75,7 @@ function ViewMember({ member, onEdit, reload }) {
   async function toggleActive() {
     const active = !member.active
     if (await setActive(active)) {
-      showToast(active ? `${member.name} volvió a estar activo` : `${member.name} dado de baja`, () => setActive(!active))
+      showToast(active ? `${member.name} volvió a estar activa` : `${member.name} dada de baja`, () => setActive(!active))
     }
   }
 
@@ -125,7 +125,7 @@ function ViewMember({ member, onEdit, reload }) {
       <section className="section stack">
         <button className="btn-secondary" onClick={onEdit}>Editar datos</button>
         <button className="btn-secondary" onClick={toggleActive}>
-          {member.active ? 'Dar de baja' : 'Volver a darlo de alta'}
+          {member.active ? 'Dar de baja' : 'Volver a darla de alta'}
         </button>
         {member.active && <p className="muted">Dá de baja a quien deja de venir. Su historial se guarda.</p>}
         {error && <p className="error" role="alert">{error}</p>}

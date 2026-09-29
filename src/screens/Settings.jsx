@@ -32,7 +32,7 @@ export default function Settings() {
           <li>
             <Link to="/settings/import" className="card">
               <span className="card-title">Importar desde una planilla</span>
-              <span className="muted">Cargar muchos planes, clases o socios de una vez con un archivo CSV</span>
+              <span className="muted">Cargar muchos planes, clases o chicas de una vez con un archivo CSV</span>
             </Link>
           </li>
         </ul>
@@ -74,7 +74,7 @@ function BirthdayMessage({ settings, reload }) {
           Mensaje
           <textarea rows={4} value={text} onChange={(e) => setText(e.target.value)} />
         </label>
-        <p className="muted">{'{name}'} se reemplaza por el nombre del socio. Igual podés cambiar el texto en WhatsApp antes de mandarlo.</p>
+        <p className="muted">{'{name}'} se reemplaza por el nombre de la chica. Igual podés cambiar el texto en WhatsApp antes de mandarlo.</p>
         {error && <p className="error" role="alert">{error}</p>}
         <button className="btn-secondary" disabled={text.trim() === settings.birthday_message}>Guardar saludo</button>
       </form>
@@ -120,7 +120,7 @@ function Backup() {
     <section className="section">
       <h2>Copia de seguridad</h2>
       <p className="muted">
-        Guarda una copia de todo (socios, clases, pagos, tienda) en archivos de planilla. Hacela una vez por mes y
+        Guarda una copia de todo (chicas, clases, pagos, tienda) en archivos de planilla. Hacela una vez por mes y
         guardá los archivos en un lugar seguro, como Google Drive o tu mail.
       </p>
       {files ? (

@@ -165,8 +165,8 @@ function Members({ group }) {
 
   return (
     <section className="section">
-      <h2>Socios ({members.length})</h2>
-      {members.length === 0 && <p className="empty">Todavía no hay socios en esta clase.</p>}
+      <h2>Chicas ({members.length})</h2>
+      {members.length === 0 && <p className="empty">Todavía no hay chicas en esta clase.</p>}
       <ul className="row-list">
         {members.map((m) => (
           <li key={m.id}>
@@ -177,7 +177,7 @@ function Members({ group }) {
       {members.length > 0 && (
         <Link to={`/groups/${group.id}/message`} className="btn-primary">Mandar mensaje a la clase</Link>
       )}
-      <Link to={`/members/new?group=${group.id}`} className="btn-secondary">+ Agregar socios a esta clase</Link>
+      <Link to={`/members/new?group=${group.id}`} className="btn-secondary">+ Agregar chicas a esta clase</Link>
     </section>
   )
 }

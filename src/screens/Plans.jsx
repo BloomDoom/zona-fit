@@ -42,7 +42,7 @@ export default function Plans() {
     <main className="screen">
       <Link to="/groups" className="back-link">‹ Clases</Link>
       <h1>Planes y precios</h1>
-      <p className="muted">Lo que paga cada socio por mes. Cuando sube un precio, cambialo acá.</p>
+      <p className="muted">Lo que paga cada chica por mes. Cuando sube un precio, cambialo acá.</p>
       <LoadState {...result} />
 
       {plans && (
@@ -148,12 +148,12 @@ function PlanCard({ plan, reload }) {
           <span className="muted"> por mes, desde {formatMonth(current.effective_month)}</span>
         </p>
       ) : (
-        <p className="error">Sin precio todavía: sus socios no generan cuota.</p>
+        <p className="error">Sin precio todavía: sus chicas no generan cuota.</p>
       )}
       {upcoming.map((p) => (
         <p key={p.id}>Desde {formatMonth(p.effective_month)}: <strong>{formatMoney(p.amount)}</strong></p>
       ))}
-      <p className="muted">{plural(plan.memberCount, 'socio activo', 'socios activos')}</p>
+      <p className="muted">{plural(plan.memberCount, 'chica activa', 'chicas activas')}</p>
 
       {changing === 'price' && (
         <form onSubmit={savePrice} className="slot-box">

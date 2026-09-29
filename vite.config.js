@@ -18,13 +18,13 @@ export default defineConfig({
       manifest: {
         name: 'Zona Fit',
         short_name: 'Zona Fit',
-        description: 'Socios, clases, cuotas y tienda',
+        description: 'Chicas, clases, cuotas y tienda',
         display: 'standalone',
         orientation: 'portrait',
         start_url: base,
         scope: base,
-        background_color: '#f4f3f1',
-        theme_color: '#f4f3f1',
+        background_color: '#0d0d10',
+        theme_color: '#0d0d10',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
