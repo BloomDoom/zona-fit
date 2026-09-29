@@ -5,7 +5,7 @@ import { todayISO } from './format.js'
 
 const TABLES = [
   'plans', 'plan_prices', 'groups', 'group_slots', 'members', 'enrollments', 'sessions', 'absences',
-  'charges', 'payments', 'products', 'sales', 'settings',
+  'charges', 'payments', 'products', 'sales', 'shop_moves', 'settings',
 ]
 
 // Supabase returns at most 1000 rows per request, so read in pages.

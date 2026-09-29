@@ -1,5 +1,7 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { asset } from '../lib/asset.js'
+import { useLoad } from '../lib/useLoad.js'
+import { loadLowStock } from '../lib/shop.js'
 
 // Simple line icons (from the Lucide icon set), drawn inline so we
 // don't need an icon library.
@@ -23,6 +25,11 @@ const tabs = [
 ]
 
 export default function TabBar() {
+  // Checked again on every screen change, so the dot goes away after restocking.
+  const { pathname } = useLocation()
+  const lowStock = useLoad(loadLowStock, [pathname])
+  const shopWarning = lowStock.data?.length > 0
+
   return (
     <nav className="tab-bar">
       {tabs.map((tab) => (
@@ -34,9 +41,13 @@ export default function TabBar() {
               <img className="logo-mark" src={asset('logo-mark.png')} alt="" />
             </span>
           ) : (
-            <svg viewBox="0 0 24 24" aria-hidden="true">{icons[tab.icon]}</svg>
+            <span className="tab-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">{icons[tab.icon]}</svg>
+              {tab.to === '/shop' && shopWarning && <span className="tab-dot" />}
+            </span>
           )}
           {tab.label}
+          {tab.to === '/shop' && shopWarning && <span className="visually-hidden"> (hay productos con poco stock)</span>}
         </NavLink>
       ))}
     </nav>

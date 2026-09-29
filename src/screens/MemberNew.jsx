@@ -6,6 +6,7 @@ import { todayISO } from '../lib/format.js'
 import { saveErrorMessage } from '../lib/errors.js'
 import LoadState from '../components/LoadState.jsx'
 import MemberFields, { EMPTY_MEMBER, cleanMember } from '../components/MemberFields.jsx'
+import GroupPicker from '../components/GroupPicker.jsx'
 
 async function loadOptions() {
   const [groups, plans] = await Promise.all([
@@ -16,12 +17,13 @@ async function loadOptions() {
 }
 
 // Quick-add: after saving, the form clears but stays open (keeping the
-// plan, class and start date), so she can type many members in a row.
+// plan, classes and start date), so she can type many members in a row.
+// Only the basics are asked here; emergency contact and notes are on Edit.
 export default function MemberNew() {
   const [params] = useSearchParams()
   const result = useLoad(loadOptions, [])
   const [values, setValues] = useState({ ...EMPTY_MEMBER, start_date: todayISO() })
-  const [groupId, setGroupId] = useState(params.get('group') || '')
+  const [groupIds, setGroupIds] = useState(params.get('group') ? [Number(params.get('group'))] : [])
   const [added, setAdded] = useState([]) // members saved on this visit
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -33,9 +35,11 @@ export default function MemberNew() {
     setBusy(true)
     try {
       const member = await unwrap(supabase.from('members').insert(cleanMember(values)).select().single())
-      if (groupId) {
+      if (groupIds.length > 0) {
         await unwrap(
-          supabase.from('enrollments').insert({ member_id: member.id, group_id: Number(groupId), start_date: values.start_date }),
+          supabase
+            .from('enrollments')
+            .insert(groupIds.map((group_id) => ({ member_id: member.id, group_id, start_date: values.start_date }))),
         )
       }
       setAdded([member, ...added])
@@ -56,7 +60,7 @@ export default function MemberNew() {
 
       {added.length > 0 && (
         <p className="success" role="status">
-          ✓ {added[0].name} agregada{added.length > 1 && ` (van ${added.length})`}. Escribí el siguiente.
+          ✓ {added[0].name} agregada{added.length > 1 && ` (van ${added.length})`}. Escribí la siguiente.
         </p>
       )}
 
@@ -67,19 +71,12 @@ export default function MemberNew() {
               Todavía no hay planes. <Link to="/plans">Creá los planes</Link> primero para que se generen las cuotas.
             </p>
           )}
-          <MemberFields values={values} onChange={setValues} plans={result.data.plans} nameRef={nameRef} />
-          <label>
-            Clase <span className="optional">(para la lista de asistencia)</span>
-            <select value={groupId} onChange={(e) => setGroupId(e.target.value)}>
-              <option value="">Ninguna</option>
-              {result.data.groups.map((g) => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </select>
-          </label>
+          <MemberFields values={values} onChange={setValues} plans={result.data.plans} nameRef={nameRef} short />
+          <GroupPicker groups={result.data.groups} value={groupIds} onChange={setGroupIds} />
+          <p className="muted">Contacto de emergencia y notas se pueden agregar después, en “Editar datos”.</p>
           {error && <p className="error" role="alert">{error}</p>}
           <button className="btn-primary" disabled={busy}>
-            {busy ? 'Guardando…' : 'Guardar y agregar otro'}
+            {busy ? 'Guardando…' : 'Guardar y agregar otra'}
           </button>
         </form>
       )}

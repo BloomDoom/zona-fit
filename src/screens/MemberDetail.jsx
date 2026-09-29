@@ -10,6 +10,7 @@ import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from '../components/Toast.jsx'
 import LoadState from '../components/LoadState.jsx'
 import MemberFields, { cleanMember } from '../components/MemberFields.jsx'
+import GroupPicker from '../components/GroupPicker.jsx'
 import MemberPayments from '../components/MemberPayments.jsx'
 import MemberAttendance from '../components/MemberAttendance.jsx'
 import BackButton from '../components/BackButton.jsx'
@@ -120,7 +121,9 @@ function ViewMember({ member, onEdit, reload }) {
           <p className="notes">{member.notes}</p>
         </section>
       )}
-      <p className="muted">Empezó el {formatDate(member.start_date)}</p>
+      <p className="muted">
+        Empezó el {formatDate(member.start_date)} · su cuota vence el {Number(member.start_date.slice(8, 10))} de cada mes
+      </p>
 
       <section className="section stack">
         <button className="btn-secondary" onClick={onEdit}>Editar datos</button>
@@ -177,9 +180,6 @@ function EditMember({ member, groups, plans, onDone }) {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const toggleGroup = (id) =>
-    setGroupIds(groupIds.includes(id) ? groupIds.filter((g) => g !== id) : [...groupIds, id])
-
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
@@ -212,16 +212,7 @@ function EditMember({ member, groups, plans, onDone }) {
       <MemberFields values={values} onChange={setValues} plans={planChoices} />
       <p className="muted">Si cambiás el plan, la cuota de este mes cambia (si todavía no pagó). Los meses anteriores quedan igual.</p>
 
-      <fieldset>
-        <legend>Clases</legend>
-        {groups.length === 0 && <p className="muted">Todavía no hay clases.</p>}
-        {groups.map((g) => (
-          <label key={g.id} className="checkbox-row">
-            <input type="checkbox" checked={groupIds.includes(g.id)} onChange={() => toggleGroup(g.id)} />
-            {g.name}
-          </label>
-        ))}
-      </fieldset>
+      <GroupPicker groups={groups} value={groupIds} onChange={setGroupIds} />
 
       {error && <p className="error" role="alert">{error}</p>}
       <div className="btn-row">

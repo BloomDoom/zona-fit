@@ -17,6 +17,7 @@ import GroupMessage from './screens/GroupMessage.jsx'
 import Plans from './screens/Plans.jsx'
 import Shop from './screens/Shop.jsx'
 import ProductEdit from './screens/ProductEdit.jsx'
+import Wallet from './screens/Wallet.jsx'
 import Settings from './screens/Settings.jsx'
 import Import from './screens/Import.jsx'
 import Insights from './screens/Insights.jsx'
@@ -86,6 +87,7 @@ export default function App() {
             <Route path="/plans" element={<Plans />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/shop/new" element={<ProductEdit />} />
+            <Route path="/shop/wallet" element={<Wallet />} />
             <Route path="/shop/:id" element={<ProductEdit />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/settings/import" element={<Import />} />

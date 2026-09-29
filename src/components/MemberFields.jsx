@@ -2,6 +2,8 @@
 //   values = { name, phone, plan_id, birth_date, start_date,
 //              emergency_name, emergency_phone, notes }
 //   plans  = active plans for the Plan select
+//   short  = leave out the emergency contact and notes (quick-add only
+//            asks for the basics; they can be filled in later when editing)
 
 export const EMPTY_MEMBER = {
   name: '', phone: '', plan_id: '', birth_date: '', emergency_name: '', emergency_phone: '', notes: '',
@@ -17,7 +19,7 @@ export function cleanMember(values) {
   return clean
 }
 
-export default function MemberFields({ values, onChange, plans, nameRef }) {
+export default function MemberFields({ values, onChange, plans, nameRef, short = false }) {
   const field = (key) => ({
     value: values[key] ?? '',
     onChange: (e) => onChange({ ...values, [key]: e.target.value }),
@@ -34,6 +36,14 @@ export default function MemberFields({ values, onChange, plans, nameRef }) {
         <input {...field('phone')} type="tel" placeholder="ej. 11 5555-1234" />
       </label>
       <label>
+        Fecha de nacimiento <span className="optional">(para los cumples)</span>
+        <input {...field('birth_date')} type="date" />
+      </label>
+      <label>
+        Empezó el <span className="optional">(su cuota vence ese día de cada mes)</span>
+        <input {...field('start_date')} type="date" required />
+      </label>
+      <label>
         Plan
         <select {...field('plan_id')}>
           <option value="">Sin plan (no paga cuota)</option>
@@ -42,14 +52,14 @@ export default function MemberFields({ values, onChange, plans, nameRef }) {
           ))}
         </select>
       </label>
-      <label>
-        Fecha de nacimiento <span className="optional">(para los cumples)</span>
-        <input {...field('birth_date')} type="date" />
-      </label>
-      <label>
-        Empezó el
-        <input {...field('start_date')} type="date" required />
-      </label>
+      {!short && <MoreFields field={field} />}
+    </>
+  )
+}
+
+function MoreFields({ field }) {
+  return (
+    <>
       <fieldset>
         <legend>
           Contacto de emergencia <span className="optional">(opcional)</span>

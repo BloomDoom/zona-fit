@@ -473,6 +473,40 @@ label.btn-secondary {
   grid-column: 1 / -1; /* the day takes the full width */
 }
 
+/* Lu Ma Mi Ju Vi Sá Do: tap each day the class happens */
+.day-picker {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+}
+.day-picker legend {
+  margin-bottom: 0.35rem;
+  padding: 0;
+  font-weight: 600;
+}
+.day-picker button {
+  min-height: var(--tap);
+  padding: 0;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+.day-picker button[aria-pressed='true'] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-text);
+}
+[data-big-text] .day-picker {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .big-number {
   font-size: 1.6rem;
   font-weight: 700;
@@ -1503,4 +1537,79 @@ textarea {
 }
 .plan-card p {
   margin: 0;
+}
+
+/* ───────── Round 3: shop wallet and low-stock warnings */
+/* Tienda: the wallet's balance, tap to open it */
+.wallet-card {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1rem 0;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 1.5rem;
+}
+.wallet-card > span:first-child {
+  display: flex;
+  flex-direction: column;
+}
+.wallet-card .muted {
+  font-size: 1rem;
+}
+.wallet-card .big-number {
+  margin: 0;
+}
+/* Billetera: the month's numbers, one per row */
+.wallet-month {
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.wallet-month li {
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.0625rem;
+}
+.wallet-month .wallet-profit {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+
+/* "Poco stock" on Inicio and Tienda: amber, like "Quedan 2" */
+.stock-warning {
+  display: block;
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-card);
+  background: var(--warn-soft);
+  color: var(--warn-text);
+  text-decoration: none;
+}
+
+/* The dot on the Tienda tab when something is running low */
+.tab-icon {
+  position: relative;
+  display: flex;
+}
+.tab-dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--warn-text);
+  border: 2px solid #141418; /* the tab bar's color, so it stands out */
+}
+
+/* Read aloud by VoiceOver, not shown */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

@@ -3,15 +3,15 @@ import { Link } from 'react-router-dom'
 import { useLoad } from '../lib/useLoad.js'
 import { formatMoney, plural, todayISO } from '../lib/format.js'
 import { METHODS, sumByMethod } from '../lib/payments.js'
-import { LOW_STOCK, loadProducts, loadSales, recordSale, saleTotal, sortByStock, undoSale } from '../lib/shop.js'
+import { isLow, loadBalance, loadProducts, loadSales, recordSale, saleTotal, sortByStock, undoSale } from '../lib/shop.js'
 import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from '../components/Toast.jsx'
 import LoadState from '../components/LoadState.jsx'
 
 async function loadShop() {
   const today = todayISO()
-  const [products, sales] = await Promise.all([loadProducts(), loadSales(today, today)])
-  return { products, sales }
+  const [products, sales, balance] = await Promise.all([loadProducts(), loadSales(today, today), loadBalance()])
+  return { products, sales, balance }
 }
 
 export default function Shop() {
@@ -20,6 +20,7 @@ export default function Shop() {
   const products = result.data?.products
   const active = sortByStock(products?.filter((p) => p.active) ?? [])
   const inactive = products?.filter((p) => !p.active) ?? []
+  const low = active.filter(isLow)
 
   return (
     <main className="screen">
@@ -31,6 +32,20 @@ export default function Shop() {
 
       {products && (
         <>
+          <Link to="/shop/wallet" className="card wallet-card">
+            <span>
+              <span className="muted">Billetera de la tienda</span>
+              <span className="big-number">{formatMoney(result.data.balance)}</span>
+            </span>
+            <span aria-hidden="true">›</span>
+          </Link>
+
+          {low.length > 0 && (
+            <p className="stock-warning" role="status">
+              <strong>Poco stock:</strong> {low.map((p) => `${p.name} (${p.stock})`).join(', ')}
+            </p>
+          )}
+
           <TodaySales sales={result.data.sales} reload={result.reload} />
 
           {active.length === 0 ? (
@@ -70,10 +85,10 @@ export default function Shop() {
 }
 
 // "Sin stock" / "Quedan 2" / "12 en stock"
-function StockChip({ stock }) {
-  if (stock <= 0) return <span className="chip chip-overdue">Sin stock</span>
-  if (stock <= LOW_STOCK) return <span className="chip chip-partial">Quedan {stock}</span>
-  return <span className="chip chip-paid">{stock} en stock</span>
+function StockChip({ product }) {
+  if (product.stock <= 0) return <span className="chip chip-overdue">Sin stock</span>
+  if (isLow(product)) return <span className="chip chip-partial">Quedan {product.stock}</span>
+  return <span className="chip chip-paid">{product.stock} en stock</span>
 }
 
 function ProductCard({ product: p, open, onOpen, onClose, reload }) {
@@ -85,7 +100,7 @@ function ProductCard({ product: p, open, onOpen, onClose, reload }) {
           <span>{formatMoney(p.price)}</span>
         </Link>
         <span className="charge-right">
-          <StockChip stock={p.stock} />
+          <StockChip product={p} />
         </span>
       </div>
       {open ? (

@@ -6,6 +6,7 @@ import { addDays, formatDate, formatDay, formatTime, isoWeekday, plural, todayIS
 import { loadSessions, membersOn, sessionPath, updateSession } from '../lib/sessions.js'
 import { birthdaysBetween } from '../lib/members.js'
 import { loadSettings } from '../lib/payments.js'
+import { loadLowStock } from '../lib/shop.js'
 import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from '../components/Toast.jsx'
 import LoadState from '../components/LoadState.jsx'
@@ -15,7 +16,7 @@ async function loadDay(date) {
   const sessions = await loadSessions(date, date)
   const groupIds = [...new Set(sessions.map((s) => s.group_id))]
   const savedIds = sessions.filter((s) => s.id).map((s) => s.id)
-  const [enrollments, absences, withBirthday, settings] = await Promise.all([
+  const [enrollments, absences, withBirthday, settings, lowStock] = await Promise.all([
     groupIds.length
       ? unwrap(supabase.from('enrollments').select('group_id, start_date, end_date, members(id, name, active)').in('group_id', groupIds))
       : [],
@@ -24,8 +25,10 @@ async function loadDay(date) {
       : [],
     unwrap(supabase.from('members').select('id, name, phone, birth_date').eq('active', true).not('birth_date', 'is', null)),
     loadSettings(),
+    loadLowStock().catch(() => []), // only a reminder: never let it break Inicio
   ])
   return {
+    lowStock,
     // birthdays on this day and the 6 days after it
     birthdays: birthdaysBetween(withBirthday, date, addDays(date, 6)),
     birthdayMessage: settings.birthday_message,
@@ -74,6 +77,12 @@ export default function Today() {
 
       <LoadState {...result} />
       {result.data && <Birthdays birthdays={result.data.birthdays} date={date} message={result.data.birthdayMessage} />}
+      {result.data?.lowStock.length > 0 && (
+        <Link to="/shop" className="stock-warning">
+          <strong>Poco stock en la tienda:</strong>{' '}
+          {result.data.lowStock.map((p) => `${p.name} (${p.stock})`).join(', ')} ›
+        </Link>
+      )}
 
       {sessions && (
         <>

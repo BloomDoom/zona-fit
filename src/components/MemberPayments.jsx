@@ -2,24 +2,23 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { unwrap, useLoad } from '../lib/useLoad.js'
 import { currentMonthISO, formatDate, formatMoney, formatMonth, parseAmount } from '../lib/format.js'
-import { METHODS, STATUS_LABELS, activePayments, ensureCharges, loadSettings, withStatus } from '../lib/payments.js'
+import { METHODS, STATUS_LABELS, activePayments, ensureCharges, withStatus } from '../lib/payments.js'
 import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from './Toast.jsx'
 import LoadState from './LoadState.jsx'
 import PayPanel from './PayPanel.jsx'
 
 async function loadCharges(memberId) {
-  const settings = await loadSettings()
   await ensureCharges(currentMonthISO()) // so this month's fee shows even if Pagos wasn't opened yet
   const charges = await unwrap(
     supabase
       .from('charges')
-      .select('*, members(id, name), plans(id, name), payments(*)')
+      .select('*, members(id, name, start_date), plans(id, name), payments(*)')
       .eq('member_id', memberId)
       .is('deleted_at', null)
       .order('month', { ascending: false }),
   )
-  return charges.map((c) => withStatus(c, settings.due_day))
+  return charges.map(withStatus)
 }
 
 // A member's payment history: one card per monthly fee, newest first.

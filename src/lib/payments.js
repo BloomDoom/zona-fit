@@ -48,28 +48,42 @@ export function activePayments(charge) {
   return (charge.payments || []).filter((p) => !p.deleted_at)
 }
 
-// Adds paid, balance and status to a charge. `charge.payments` must be loaded.
+// Each member's fee is due on the day of the month she started: started
+// on the 15th → due on the 15th of every month. A 31st becomes the last
+// day of shorter months (30 Apr, 28 Feb).
+export function dueDate(month, startDate) {
+  const [y, m] = month.split('-').map(Number)
+  const lastDay = new Date(y, m, 0).getDate()
+  const day = Math.min(Number(startDate.slice(8, 10)), lastDay)
+  return month.slice(0, 8) + String(day).padStart(2, '0')
+}
+
+// Adds paid, balance, due and status to a charge. `charge.payments` and
+// `charge.members.start_date` must be loaded.
 //   paid    = total paid so far
 //   balance = what's still owed
+//   due     = the date it's due (YYYY-MM-DD)
 //   status  = 'paid' | 'partial' | 'unpaid' | 'overdue'
-// Overdue = not fully paid and today is after the due day of that month.
-export function withStatus(charge, dueDay) {
+// Overdue = not fully paid and today is after its due date.
+export function withStatus(charge) {
   const paid = activePayments(charge).reduce((sum, p) => sum + p.amount, 0)
   const balance = Math.max(charge.amount - paid, 0)
-  const dueDate = charge.month.slice(0, 8) + String(dueDay).padStart(2, '0')
+  const due = dueDate(charge.month, charge.members.start_date)
 
   let status = 'paid'
   if (balance > 0) {
-    if (todayISO() > dueDate) status = 'overdue'
+    if (todayISO() > due) status = 'overdue'
     else status = paid > 0 ? 'partial' : 'unpaid'
   }
-  return { ...charge, paid, balance, status }
+  return { ...charge, paid, balance, due, status }
 }
 
+// Inside each status, the earliest due date first.
 export function sortByStatus(charges) {
   return [...charges].sort(
     (a, b) =>
       STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status) ||
+      a.due.localeCompare(b.due) ||
       a.members.name.localeCompare(b.members.name, 'es'),
   )
 }

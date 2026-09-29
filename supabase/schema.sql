@@ -14,7 +14,7 @@
 -- ───────────────────────── Settings (always exactly one row)
 create table settings (
   id               int primary key default 1 check (id = 1),
-  due_day          int not null default 10 check (due_day between 1 and 28),
+  due_day          int not null default 10 check (due_day between 1 and 28),  -- no longer used: each fee is due on the day its member started
   skip_months      int[] not null default '{}',  -- e.g. {1} = no fees in January
   birthday_message text not null
     default '¡Feliz cumple, {name}! 🎂 Que tengas un día hermoso. ¡Te esperamos en Zona Fit! 💪'
@@ -160,6 +160,7 @@ create table products (
   name       text not null,
   price      int not null check (price >= 0),
   stock      int not null default 0,  -- can go below 0 if she sells more than she counted
+  min_stock  int not null default 3 check (min_stock >= 0),  -- warn at this many or fewer
   active     boolean not null default true,
   created_at timestamptz not null default now()
 );
@@ -172,6 +173,23 @@ create table sales (
   unit_price int not null check (unit_price >= 0),
   method     text not null check (method in ('cash', 'transfer', 'mercado_pago', 'cuenta_dni')),
   sold_on    date not null default (now() at time zone 'America/Argentina/Buenos_Aires')::date,
+  created_at timestamptz not null default now(),
+  deleted_at timestamptz
+);
+
+-- The shop's wallet: money that goes in or out of the shop, apart from sales.
+--   purchase   = paid for stock that arrived (product_id + qty)
+--   withdrawal = money taken out of the shop (e.g. to the gym's pocket)
+--   deposit    = money put in (e.g. the cash the shop starts with)
+-- Wallet balance = sales + deposits − purchases − withdrawals.
+create table shop_moves (
+  id         bigint generated always as identity primary key,
+  kind       text not null check (kind in ('purchase', 'withdrawal', 'deposit')),
+  amount     int not null check (amount >= 0),
+  product_id bigint references products(id),
+  qty        int,
+  note       text,
+  moved_on   date not null default (now() at time zone 'America/Argentina/Buenos_Aires')::date,
   created_at timestamptz not null default now(),
   deleted_at timestamptz
 );
@@ -295,17 +313,56 @@ begin
   end if;
 end $$;
 
--- New stock arrived (or a correction: a negative number takes some away).
+-- A stock correction (a negative number takes some away). No money moves.
 create function add_stock(p_product bigint, p_qty int)
 returns void language sql as $$
   update products set stock = stock + p_qty where id = p_product
 $$;
 
+-- Stock arrived and was paid for: adds the stock and the purchase together.
+-- Returns the purchase id (the app keeps it for the Undo button).
+create function restock(p_product bigint, p_qty int, p_cost int)
+returns bigint language plpgsql as $$
+declare new_id bigint;
+begin
+  update products set stock = stock + p_qty where id = p_product;
+  if not found then
+    raise exception 'product % not found', p_product;
+  end if;
+  insert into shop_moves (kind, amount, product_id, qty)
+  values ('purchase', p_cost, p_product, p_qty)
+  returning id into new_id;
+  return new_id;
+end $$;
+
+-- Undo / remove a purchase: marked as removed, and its stock is taken back.
+create function undo_restock(p_move bigint)
+returns void language plpgsql as $$
+declare m record;
+begin
+  update shop_moves set deleted_at = now()
+  where id = p_move and kind = 'purchase' and deleted_at is null
+  returning product_id, qty into m;
+  if found then
+    update products set stock = stock - m.qty where id = m.product_id;
+  end if;
+end $$;
+
+-- What's in the shop's wallet right now.
+create function shop_balance()
+returns int language sql stable as $$
+  select (coalesce((select sum(qty * unit_price) from sales where deleted_at is null), 0)
+        + coalesce((select sum(case when kind = 'deposit' then amount else -amount end)
+                    from shop_moves where deleted_at is null), 0))::int
+$$;
+
 -- Only the logged-in user may run these (Postgres lets everyone by default).
 revoke execute on function price_for(bigint, date), ensure_charges(date),
-  record_sale(bigint, int, text), undo_sale(bigint), add_stock(bigint, int) from public, anon;
+  record_sale(bigint, int, text), undo_sale(bigint), add_stock(bigint, int),
+  restock(bigint, int, int), undo_restock(bigint), shop_balance() from public, anon;
 grant execute on function price_for(bigint, date), ensure_charges(date),
-  record_sale(bigint, int, text), undo_sale(bigint), add_stock(bigint, int) to authenticated;
+  record_sale(bigint, int, text), undo_sale(bigint), add_stock(bigint, int),
+  restock(bigint, int, int), undo_restock(bigint), shop_balance() to authenticated;
 
 
 -- ───────────────────────── Security (Row Level Security)
@@ -316,7 +373,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['settings', 'plans', 'plan_prices', 'groups', 'group_slots', 'members',
-    'enrollments', 'sessions', 'absences', 'charges', 'payments', 'products', 'sales']
+    'enrollments', 'sessions', 'absences', 'charges', 'payments', 'products', 'sales', 'shop_moves']
   loop
     execute format('alter table %I enable row level security', t);
     execute format('create policy "Logged-in user has full access" on %I
@@ -326,7 +383,7 @@ begin
 end $$;
 
 -- Deleting is only allowed where it can't destroy history. Payments,
--- charges, absences, sessions, sales and products have no delete
+-- charges, absences, sessions, sales, shop moves and products have no delete
 -- permission at all, so even a bug in the app can't erase them.
 grant delete on plan_prices, group_slots, enrollments to authenticated;
 

@@ -162,15 +162,10 @@ function PaymentSettings({ settings, reload }) {
     <>
       <section className="section">
         <h2>Cuotas</h2>
-        <label>
-          La cuota vence el día
-          <select value={settings.due_day} onChange={(e) => save({ due_day: Number(e.target.value) }, 'Día de vencimiento guardado')}>
-            {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-        </label>
-        <p className="muted">Después de ese día, las cuotas sin pagar aparecen como Vencidas.</p>
+        <p className="muted">
+          Cada chica paga el mismo día del mes en que empezó (si empezó el 15, le vence el 15). Después de ese
+          día, si no pagó, su cuota aparece como Vencida. Para cambiarlo, editá su fecha de inicio.
+        </p>
       </section>
 
       <section className="section">

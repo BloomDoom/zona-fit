@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase.js'
 import { unwrap } from '../lib/useLoad.js'
 import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from '../components/Toast.jsx'
-import SlotFields, { NEW_SLOT } from '../components/SlotFields.jsx'
+import SlotFields, { NEW_SLOT, slotRows } from '../components/SlotFields.jsx'
 
 export default function GroupNew() {
   const navigate = useNavigate()
@@ -18,16 +18,15 @@ export default function GroupNew() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    if (slots.some((s) => s.weekdays.length === 0)) return setError('Elegí al menos un día en cada horario.')
     setBusy(true)
     try {
       // 1. the class itself; .select().single() gives us back its new id
       const group = await unwrap(
         supabase.from('groups').insert({ name: name.trim(), notes: notes.trim() || null }).select().single(),
       )
-      // 2. its weekly times
-      if (slots.length > 0) {
-        await unwrap(supabase.from('group_slots').insert(slots.map((s) => ({ ...s, group_id: group.id }))))
-      }
+      // 2. its weekly times: one row per day
+      await unwrap(supabase.from('group_slots').insert(slots.flatMap((s) => slotRows(s, group.id))))
       showToast(`${group.name} creada`)
       navigate(`/groups/${group.id}`, { replace: true })
     } catch (err) {
@@ -59,7 +58,7 @@ export default function GroupNew() {
           </div>
         ))}
         <button type="button" className="btn-secondary" onClick={() => setSlots([...slots, NEW_SLOT])}>
-          + Agregar otro horario
+          + Otro horario (si algún día es a otra hora)
         </button>
 
         <label className="section">

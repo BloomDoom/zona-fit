@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { unwrap, useLoad } from '../lib/useLoad.js'
-import { addMonths, currentMonthISO, formatMoney, formatMonth } from '../lib/format.js'
+import { addMonths, currentMonthISO, formatDate, formatMoney, formatMonth } from '../lib/format.js'
 import { METHODS, STATUS_LABELS, ensureCharges, loadSettings, sortByStatus, totalsByMethod, withStatus } from '../lib/payments.js'
 import LoadState from '../components/LoadState.jsx'
 import PayPanel from '../components/PayPanel.jsx'
@@ -14,11 +14,11 @@ async function loadMonth(month) {
   const charges = await unwrap(
     supabase
       .from('charges')
-      .select('*, members(id, name), plans(id, name), payments(*)')
+      .select('*, members(id, name, start_date), plans(id, name), payments(*)')
       .eq('month', month)
       .is('deleted_at', null),
   )
-  return { skipped, charges: sortByStatus(charges.map((c) => withStatus(c, settings.due_day))) }
+  return { skipped, charges: sortByStatus(charges.map(withStatus)) }
 }
 
 export default function Payments() {
@@ -98,7 +98,10 @@ export default function Payments() {
                 <div className="charge-top">
                   <Link to={`/members/${c.members.id}`} className="charge-name">
                     <span className="card-title">{c.members.name} ›</span>
-                    <span className="muted">{c.plans.name}</span>
+                    <span className="muted">
+                      {c.plans.name}
+                      {c.status !== 'paid' && ` · vence el ${formatDate(c.due).slice(0, 5)}`}
+                    </span>
                   </Link>
                   <span className="charge-right">
                     <span className={`chip chip-${c.status}`}>{STATUS_LABELS[c.status]}</span>
