@@ -94,15 +94,17 @@ function StockChip({ product }) {
 function ProductCard({ product: p, open, onOpen, onClose, reload }) {
   return (
     <div className={`card product-card ${p.stock <= 0 ? 'out-of-stock' : ''}`}>
-      <div className="charge-top">
-        <Link to={`/shop/${p.id}`} className="charge-name">
-          <span className="card-title">{p.name} ›</span>
+      {/* The whole top (name, price, stock) opens the product to edit it */}
+      <Link to={`/shop/${p.id}`} className="product-top">
+        <span className="charge-name">
+          <span className="card-title">{p.name}</span>
           <span>{formatMoney(p.price)}</span>
-        </Link>
+        </span>
         <span className="charge-right">
           <StockChip product={p} />
         </span>
-      </div>
+        <span className="product-chevron" aria-hidden="true">›</span>
+      </Link>
       {open ? (
         <SellPanel product={p} onDone={() => { onClose(); reload() }} onCancel={onClose} />
       ) : (

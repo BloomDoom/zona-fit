@@ -1502,6 +1502,32 @@ textarea {
 .product-card {
   gap: 0.75rem;
 }
+/* Name + price + stock: one tap area that opens the product */
+.product-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: -0.5rem -0.5rem 0;
+  padding: 0.5rem;
+  border-radius: 14px;
+  color: var(--text);
+  text-decoration: none;
+}
+.product-top:active {
+  background: var(--pressed);
+}
+.product-top .charge-name {
+  flex: 1;
+  min-width: 0;
+}
+.product-chevron {
+  color: var(--muted);
+  font-size: 1.6rem;
+  line-height: 1;
+}
+[data-big-text] .product-top {
+  flex-wrap: wrap;
+}
 .product-card.out-of-stock {
   box-shadow: inset 0 0 0 2px var(--danger), var(--shadow);
 }
