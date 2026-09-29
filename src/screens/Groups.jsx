@@ -10,7 +10,7 @@ async function loadGroups() {
     unwrap(
       supabase
         .from('groups')
-        .select('*, group_slots(*, slot_enrollments(end_date, members(id, active))), enrollments(end_date, members(id, active))')
+        .select('*, group_slots(*, slot_enrollments(end_date, members(id, name, active))), enrollments(end_date, members(id, name, active))')
         .order('name'),
     ),
     unwrap(supabase.from('plans').select('id').eq('active', true)),
