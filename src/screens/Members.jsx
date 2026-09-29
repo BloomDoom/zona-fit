@@ -2,18 +2,37 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { unwrap, useLoad } from '../lib/useLoad.js'
-import { currentEnrollments, normalize } from '../lib/groups.js'
+import { normalize } from '../lib/groups.js'
+import { current } from '../lib/roster.js'
+import { formatTime, weekdayName } from '../lib/format.js'
 import LoadState from '../components/LoadState.jsx'
 
 async function loadMembers() {
   const [members, groups, plans] = await Promise.all([
-    unwrap(supabase.from('members').select('*, plans(name), enrollments(group_id, end_date, groups(name))')),
+    unwrap(
+      supabase
+        .from('members')
+        .select('*, plans(name), slot_enrollments(end_date, group_slots(group_id, weekday, start_time)), enrollments(group_id, end_date)'),
+    ),
     unwrap(supabase.from('groups').select('id, name').eq('active', true).order('name')),
     unwrap(supabase.from('plans').select('id, name').eq('active', true).order('name')),
   ])
   members.sort((a, b) => a.name.localeCompare(b.name, 'es'))
-  return { members, groups, plans }
+  return { members: members.map(withTimes), groups, plans }
 }
+
+// Adds her current times (Monday first), the classes she's in, and
+// `pending` = still signed up to a whole class, times not chosen yet.
+function withTimes(m) {
+  const times = current(m.slot_enrollments)
+    .map((e) => e.group_slots)
+    .sort((a, b) => a.weekday - b.weekday || a.start_time.localeCompare(b.start_time))
+  const pendingIds = current(m.enrollments).map((e) => e.group_id)
+  return { ...m, times, pending: pendingIds.length > 0, groupIds: new Set([...times.map((t) => t.group_id), ...pendingIds]) }
+}
+
+// "Lun 8:30 · Jue 16:30"
+const timesText = (times) => times.map((t) => `${weekdayName(t.weekday).slice(0, 3)} ${formatTime(t.start_time)}`).join(' · ')
 
 // [['A', [Ana, Andrés]], ['B', [Beto]], ...]. Accents don't matter (Á → A).
 function byLetter(members) {
@@ -29,7 +48,8 @@ function byLetter(members) {
 export default function Members() {
   const result = useLoad(loadMembers, [])
   const [search, setSearch] = useState('')
-  // "active" = all active members, "inactive", "g12" = class 12, "p3" = plan 3
+  // "active" = all active members, "inactive", "pending" = times not chosen,
+  // "g12" = class 12, "p3" = plan 3
   const [filter, setFilter] = useState('active')
 
   let members = []
@@ -38,12 +58,14 @@ export default function Members() {
       if (filter === 'inactive') return !m.active
       if (!m.active) return false
       if (filter === 'active') return true
+      if (filter === 'pending') return m.pending
       const id = filter.slice(1)
       if (filter.startsWith('p')) return String(m.plan_id) === id
-      return currentEnrollments(m.enrollments).some((e) => String(e.group_id) === id)
+      return m.groupIds.has(Number(id))
     })
     if (search) members = members.filter((m) => normalize(m.name).includes(normalize(search)))
   }
+  const pendingCount = result.data?.members.filter((m) => m.active && m.pending).length ?? 0
 
   return (
     <main className="screen">
@@ -52,6 +74,12 @@ export default function Members() {
 
       {result.data && (
         <>
+          {pendingCount > 0 && filter !== 'pending' && (
+            <button type="button" className="stock-warning pending-banner" onClick={() => setFilter('pending')}>
+              <strong>Falta elegir horarios</strong> a {pendingCount === 1 ? '1 chica' : `${pendingCount} chicas`}. Tocá para verlas.
+            </button>
+          )}
+
           <Link to="/insights" className="info-banner">
             <span><strong>Resumen del mes</strong> · ingresos y asistencia</span>
             <span aria-hidden="true">›</span>
@@ -71,6 +99,7 @@ export default function Members() {
             </div>
             <select value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Qué chicas mostrar">
               <option value="active">Todas las chicas ({result.data.members.filter((m) => m.active).length})</option>
+              {pendingCount > 0 && <option value="pending">Falta elegir horarios ({pendingCount})</option>}
               {result.data.plans.length > 0 && (
                 <optgroup label="Por plan">
                   {result.data.plans.map((p) => (
@@ -103,9 +132,9 @@ export default function Members() {
                     <li key={m.id}>
                       <Link to={`/members/${m.id}`} className="card">
                         <span className="card-title">{m.name}</span>
-                        <span className="muted">
-                          {[m.plans?.name || 'Sin plan', ...currentEnrollments(m.enrollments).map((e) => e.groups.name)].join(' · ')}
-                        </span>
+                        <span className="muted">{m.plans?.name || 'Sin plan'}</span>
+                        {m.times.length > 0 && <span className="muted">{timesText(m.times)}</span>}
+                        {m.pending && <span className="pending-chip">Falta elegir horarios</span>}
                       </Link>
                     </li>
                   ))}

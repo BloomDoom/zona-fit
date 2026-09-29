@@ -2,12 +2,17 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { unwrap, useLoad } from '../lib/useLoad.js'
 import { plural } from '../lib/format.js'
-import { currentEnrollments, slotsSummary } from '../lib/groups.js'
+import { classMembers, slotsSummary } from '../lib/groups.js'
 import LoadState from '../components/LoadState.jsx'
 
 async function loadGroups() {
   const [groups, plans] = await Promise.all([
-    unwrap(supabase.from('groups').select('*, group_slots(*), enrollments(end_date, members(active))').order('name')),
+    unwrap(
+      supabase
+        .from('groups')
+        .select('*, group_slots(*, slot_enrollments(end_date, members(id, active))), enrollments(end_date, members(id, active))')
+        .order('name'),
+    ),
     unwrap(supabase.from('plans').select('id').eq('active', true)),
   ])
   return { groups, planCount: plans.length }
@@ -70,7 +75,7 @@ function GroupList({ groups }) {
   return (
     <ul className="card-list">
       {groups.map((group) => {
-        const memberCount = currentEnrollments(group.enrollments).filter((e) => e.members.active).length
+        const memberCount = classMembers(group).length
         return (
           <li key={group.id}>
             <Link to={`/groups/${group.id}`} className="card">

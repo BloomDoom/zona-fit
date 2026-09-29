@@ -25,9 +25,10 @@ insert into settings (id) values (1);
 -- ───────────────────────── Plans (what members pay for)
 -- e.g. "2 veces por semana", "3 veces por semana", "Libre".
 create table plans (
-  id         bigint generated always as identity primary key,
-  name       text not null,
-  notes      text,
+  id             bigint generated always as identity primary key,
+  name           text not null,
+  times_per_week int check (times_per_week between 1 and 7),  -- to warn if her times don't match
+  notes          text,
   active     boolean not null default true,
   created_at timestamptz not null default now()
 );
@@ -80,8 +81,20 @@ create table members (
   created_at      timestamptz not null default now()
 );
 
--- Which class(es) a member goes to, for the attendance lists. Leaving a
--- class sets end_date, so the history is kept.
+-- Which weekly times (one day + hour of a class) a member goes to, for
+-- the attendance lists. Leaving a time sets end_date, so the history is kept.
+create table slot_enrollments (
+  id         bigint generated always as identity primary key,
+  member_id  bigint not null references members(id),
+  slot_id    bigint not null references group_slots(id),
+  start_date date not null default current_date,
+  end_date   date
+);
+
+-- A member signed up to a WHOLE class, without her times chosen yet
+-- (members loaded before times existed, or from a CSV import). She shows
+-- as "Falta elegir horarios" and is on every list of that class until
+-- her times are chosen; then this row gets an end_date.
 create table enrollments (
   id         bigint generated always as identity primary key,
   member_id  bigint not null references members(id),
@@ -373,7 +386,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['settings', 'plans', 'plan_prices', 'groups', 'group_slots', 'members',
-    'enrollments', 'sessions', 'absences', 'charges', 'payments', 'products', 'sales', 'shop_moves']
+    'slot_enrollments', 'enrollments','sessions', 'absences', 'charges', 'payments', 'products', 'sales', 'shop_moves']
   loop
     execute format('alter table %I enable row level security', t);
     execute format('create policy "Logged-in user has full access" on %I
@@ -385,7 +398,7 @@ end $$;
 -- Deleting is only allowed where it can't destroy history. Payments,
 -- charges, absences, sessions, sales, shop moves and products have no delete
 -- permission at all, so even a bug in the app can't erase them.
-grant delete on plan_prices, group_slots, enrollments to authenticated;
+grant delete on plan_prices, group_slots, slot_enrollments, enrollments to authenticated;
 
 
 -- ───────────────────────── Keep-alive

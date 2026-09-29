@@ -2,29 +2,36 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { unwrap, useLoad } from '../lib/useLoad.js'
-import { formatDate, todayISO } from '../lib/format.js'
-import { currentEnrollments } from '../lib/groups.js'
+import { formatDate, formatTime, todayISO, weekdayName } from '../lib/format.js'
+import { current } from '../lib/roster.js'
 import { callLink, whatsappLink } from '../lib/phone.js'
-import { ageOn } from '../lib/members.js'
+import { ageOn, loadMemberOptions, timesPerWeek } from '../lib/members.js'
 import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from '../components/Toast.jsx'
 import LoadState from '../components/LoadState.jsx'
 import MemberFields, { cleanMember } from '../components/MemberFields.jsx'
-import GroupPicker from '../components/GroupPicker.jsx'
+import SlotPicker from '../components/SlotPicker.jsx'
 import MemberPayments from '../components/MemberPayments.jsx'
 import MemberAttendance from '../components/MemberAttendance.jsx'
 import BackButton from '../components/BackButton.jsx'
 
+const MEMBER_FIELDS = `*, plans(id, name, times_per_week),
+  slot_enrollments(id, slot_id, end_date, group_slots(id, weekday, start_time, group_id, groups(id, name))),
+  enrollments(id, group_id, end_date, groups(id, name))`
+
 async function loadMember(id) {
-  const [member, groups, plans] = await Promise.all([
-    unwrap(
-      supabase.from('members').select('*, plans(id, name), enrollments(id, group_id, end_date, groups(id, name))').eq('id', id).single(),
-    ),
-    unwrap(supabase.from('groups').select('id, name').eq('active', true).order('name')),
-    unwrap(supabase.from('plans').select('id, name').eq('active', true).order('name')),
+  const [member, options] = await Promise.all([
+    unwrap(supabase.from('members').select(MEMBER_FIELDS).eq('id', id).single()),
+    loadMemberOptions(),
   ])
-  return { member, groups, plans }
+  return { member, ...options }
 }
+
+// Her current times, Monday first: [{ id, slot_id, group_slots: { weekday, start_time, groups } }]
+const currentTimes = (member) =>
+  current(member.slot_enrollments).sort(
+    (a, b) => a.group_slots.weekday - b.group_slots.weekday || a.group_slots.start_time.localeCompare(b.group_slots.start_time),
+  )
 
 export default function MemberDetail() {
   const { id } = useParams()
@@ -58,7 +65,8 @@ export default function MemberDetail() {
 function ViewMember({ member, onEdit, reload }) {
   const showToast = useToast()
   const [error, setError] = useState('')
-  const groups = currentEnrollments(member.enrollments).map((e) => e.groups)
+  const times = currentTimes(member)
+  const pending = current(member.enrollments) // whole classes, times not chosen yet
   const age = ageOn(member.birth_date)
 
   async function setActive(active) {
@@ -90,17 +98,26 @@ function ViewMember({ member, onEdit, reload }) {
       <p>
         <strong>Plan:</strong> {member.plans?.name || 'Sin plan (no paga cuota)'}
       </p>
-      <p className="group-links">
-        <strong>Clases:</strong>{' '}
-        {groups.length === 0
-          ? 'ninguna'
-          : groups.map((g, i) => (
-              <span key={g.id}>
-                {i > 0 && ', '}
-                <Link to={`/groups/${g.id}`}>{g.name}</Link>
-              </span>
+      <div className="group-links">
+        <strong>Horarios:</strong>
+        {times.length === 0 && pending.length === 0 && ' ninguno'}
+        {times.length > 0 && (
+          <ul className="time-list">
+            {times.map((e) => (
+              <li key={e.id}>
+                {weekdayName(e.group_slots.weekday)} {formatTime(e.group_slots.start_time)} ·{' '}
+                <Link to={`/groups/${e.group_slots.groups.id}`}>{e.group_slots.groups.name}</Link>
+              </li>
             ))}
-      </p>
+          </ul>
+        )}
+        {pending.length > 0 && (
+          <p className="stock-warning">
+            <strong>Falta elegir horarios</strong> en {pending.map((e) => e.groups.name).join(', ')}. Mientras tanto
+            aparece en todas las listas de esa clase. Tocá “Editar datos”.
+          </p>
+        )}
+      </div>
 
       {age !== null && <p>{age} años (nació el {formatDate(member.birth_date)})</p>}
 
@@ -175,8 +192,9 @@ function EditMember({ member, groups, plans, onDone }) {
   })
   // Keep showing the member's current plan even if it was turned off.
   const planChoices = member.plans && !plans.some((p) => p.id === member.plan_id) ? [...plans, member.plans] : plans
-  const current = currentEnrollments(member.enrollments)
-  const [groupIds, setGroupIds] = useState(current.map((e) => e.group_id))
+  const times = currentTimes(member)
+  const pending = current(member.enrollments)
+  const [slotIds, setSlotIds] = useState(times.map((e) => e.slot_id))
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -184,20 +202,25 @@ function EditMember({ member, groups, plans, onDone }) {
     e.preventDefault()
     setError('')
     setBusy(true)
+    const today = todayISO()
     try {
       await unwrap(supabase.from('members').update(cleanMember(values)).eq('id', member.id))
 
-      // Classes she unticked: end the enrollment today (keeps the history).
-      const removed = current.filter((e) => !groupIds.includes(e.group_id)).map((e) => e.id)
+      // Times she unticked: end them today (keeps the attendance history).
+      const removed = times.filter((e) => !slotIds.includes(e.slot_id)).map((e) => e.id)
       if (removed.length > 0) {
-        await unwrap(supabase.from('enrollments').update({ end_date: todayISO() }).in('id', removed))
+        await unwrap(supabase.from('slot_enrollments').update({ end_date: today }).in('id', removed))
       }
-      // Classes she ticked: start a new enrollment today.
-      const added = groupIds.filter((id) => !current.some((e) => e.group_id === id))
+      // Times she ticked: start today.
+      const added = slotIds.filter((id) => !times.some((e) => e.slot_id === id))
       if (added.length > 0) {
         await unwrap(
-          supabase.from('enrollments').insert(added.map((group_id) => ({ member_id: member.id, group_id, start_date: todayISO() }))),
+          supabase.from('slot_enrollments').insert(added.map((slot_id) => ({ member_id: member.id, slot_id, start_date: today }))),
         )
+      }
+      // Her times are chosen now, so the old whole-class sign-ups end.
+      if (pending.length > 0 && slotIds.length > 0) {
+        await unwrap(supabase.from('enrollments').update({ end_date: today }).in('id', pending.map((e) => e.id)))
       }
       onDone()
     } catch (err) {
@@ -212,7 +235,19 @@ function EditMember({ member, groups, plans, onDone }) {
       <MemberFields values={values} onChange={setValues} plans={planChoices} />
       <p className="muted">Si cambiás el plan, la cuota de este mes cambia (si todavía no pagó). Los meses anteriores quedan igual.</p>
 
-      <GroupPicker groups={groups} value={groupIds} onChange={setGroupIds} />
+      {pending.length > 0 && (
+        <p className="stock-warning">
+          Elegí sus horarios en {pending.map((e) => e.groups.name).join(', ')}. Al guardar, deja de aparecer en todas
+          las listas de esa clase y queda solo en los horarios que elijas.
+        </p>
+      )}
+      <SlotPicker
+        groups={groups}
+        value={slotIds}
+        onChange={setSlotIds}
+        timesPerWeek={timesPerWeek(planChoices, values.plan_id)}
+        firstGroupId={pending[0]?.group_id ?? null}
+      />
 
       {error && <p className="error" role="alert">{error}</p>}
       <div className="btn-row">

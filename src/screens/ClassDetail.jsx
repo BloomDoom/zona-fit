@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { unwrap, useLoad } from '../lib/useLoad.js'
 import { formatDay, formatTime } from '../lib/format.js'
-import { ensureSaved, loadSession, membersOn, sessionPath, updateSession } from '../lib/sessions.js'
+import { ensureSaved, loadSession, sessionPath, updateSession } from '../lib/sessions.js'
+import { loadSignups, rosterFor } from '../lib/roster.js'
 import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from '../components/Toast.jsx'
 import LoadState from '../components/LoadState.jsx'
@@ -13,12 +14,12 @@ import { useGoBack } from '../components/BackButton.jsx'
 // weekly class that hasn't been saved yet).
 async function loadClass(params) {
   const session = await loadSession(params)
-  const [enrollments, absences] = await Promise.all([
-    unwrap(supabase.from('enrollments').select('start_date, end_date, members(id, name, active)').eq('group_id', session.group_id)),
+  const [signups, absences] = await Promise.all([
+    loadSignups([session.group_id]),
     session.id ? unwrap(supabase.from('absences').select('*').eq('session_id', session.id).is('deleted_at', null)) : [],
   ])
   const absentIds = new Set(absences.map((a) => a.member_id))
-  return { session, absentIds, members: membersOn(enrollments, session.date, absentIds) }
+  return { session, absentIds, members: rosterFor(session, signups, absentIds) }
 }
 
 export default function ClassDetail() {

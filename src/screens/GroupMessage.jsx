@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { unwrap, useLoad } from '../lib/useLoad.js'
-import { currentEnrollments } from '../lib/groups.js'
+import { classMembers } from '../lib/groups.js'
 import { internationalNumber, whatsappLink } from '../lib/phone.js'
 import { buildVcard } from '../lib/vcard.js'
 import { saveFiles } from '../lib/backup.js'
@@ -11,14 +11,15 @@ import LoadState from '../components/LoadState.jsx'
 import BackButton from '../components/BackButton.jsx'
 
 async function loadGroup(id) {
+  const member = 'members(id, name, phone, active)'
   const group = await unwrap(
-    supabase.from('groups').select('id, name, enrollments(end_date, members(id, name, phone, active))').eq('id', id).single(),
+    supabase
+      .from('groups')
+      .select(`id, name, group_slots(*, slot_enrollments(end_date, ${member})), enrollments(end_date, ${member})`)
+      .eq('id', id)
+      .single(),
   )
-  const members = currentEnrollments(group.enrollments)
-    .map((e) => e.members)
-    .filter((m) => m.active)
-    .sort((a, b) => a.name.localeCompare(b.name, 'es'))
-  return { group, members }
+  return { group, members: classMembers(group) }
 }
 
 // Small things remembered on this phone (drafts, "list already made").

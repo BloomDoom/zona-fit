@@ -224,7 +224,10 @@ export default function Import() {
         {kind === 'plans' && <p className="muted">El precio empieza a correr este mes.</p>}
         {kind === 'groups' && <p className="muted">Horarios: día, hora y minutos; si son varios, separalos con “/”.</p>}
         {kind === 'members' && (
-          <p className="muted">Plan y clase tienen que coincidir con un nombre que ya exista. Fechas como DD/MM/AAAA. Las columnas vacías están bien.</p>
+          <>
+            <p className="muted">Plan y clase tienen que coincidir con un nombre que ya exista. Fechas como DD/MM/AAAA. Las columnas vacías están bien.</p>
+            <p className="muted">Las que tengan clase quedan con “Falta elegir horarios”: después le elegís a cada una sus días y turnos.</p>
+          </>
         )}
         <label className="btn-secondary file-button">
           Elegir archivo CSV

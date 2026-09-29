@@ -154,6 +154,17 @@ function PlanCard({ plan, reload }) {
         <p key={p.id}>Desde {formatMonth(p.effective_month)}: <strong>{formatMoney(p.amount)}</strong></p>
       ))}
       <p className="muted">{plural(plan.memberCount, 'chica activa', 'chicas activas')}</p>
+      {plan.active && (
+        <TimesPerWeekField
+          value={plan.times_per_week}
+          onChange={(n) =>
+            save(() => unwrap(supabase.from('plans').update({ times_per_week: n }).eq('id', plan.id)), {
+              ...opts,
+              message: n ? `${plan.name}: ${n} por semana` : 'Guardado',
+            })
+          }
+        />
+      )}
 
       {changing === 'price' && (
         <form onSubmit={savePrice} className="slot-box">
@@ -222,10 +233,27 @@ function PlanCard({ plan, reload }) {
   )
 }
 
+// How many classes a week the plan includes. Used to warn when a
+// member's chosen times don't match her plan (it never blocks saving).
+function TimesPerWeekField({ value, onChange }) {
+  return (
+    <label className={value ? '' : 'needs-value'}>
+      Clases por semana <span className="optional">(para avisar si sus horarios no coinciden)</span>
+      <select value={value ?? ''} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}>
+        <option value="">Sin definir</option>
+        {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+          <option key={n} value={n}>{n}</option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 function NewPlan({ reload }) {
   const showToast = useToast()
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
+  const [timesPerWeek, setTimesPerWeek] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -236,11 +264,14 @@ function NewPlan({ reload }) {
     if (amount === null) return setError('Escribí el precio por mes, por ejemplo 25000.')
     setBusy(true)
     try {
-      const plan = await unwrap(supabase.from('plans').insert({ name: name.trim() }).select().single())
+      const plan = await unwrap(
+        supabase.from('plans').insert({ name: name.trim(), times_per_week: timesPerWeek }).select().single(),
+      )
       await unwrap(supabase.from('plan_prices').insert({ plan_id: plan.id, amount, effective_month: currentMonthISO() }))
       showToast(`${plan.name} creado`)
       setName('')
       setPrice('')
+      setTimesPerWeek(null)
       reload()
     } catch (err) {
       setError(saveErrorMessage(err))
@@ -259,6 +290,7 @@ function NewPlan({ reload }) {
         Precio por mes
         <input inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="ej. 25000" required />
       </label>
+      <TimesPerWeekField value={timesPerWeek} onChange={setTimesPerWeek} />
       {error && <p className="error" role="alert">{error}</p>}
       <button className="btn-primary" disabled={busy}>{busy ? 'Guardando…' : 'Crear plan'}</button>
     </form>

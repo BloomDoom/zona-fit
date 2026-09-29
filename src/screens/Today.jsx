@@ -3,7 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { unwrap, useLoad } from '../lib/useLoad.js'
 import { addDays, formatDate, formatDay, formatTime, isoWeekday, plural, todayISO, weekdayName } from '../lib/format.js'
-import { loadSessions, membersOn, sessionPath, updateSession } from '../lib/sessions.js'
+import { loadSessions, sessionPath, updateSession } from '../lib/sessions.js'
+import { loadSignups, rosterFor } from '../lib/roster.js'
 import { birthdaysBetween } from '../lib/members.js'
 import { loadSettings } from '../lib/payments.js'
 import { loadLowStock } from '../lib/shop.js'
@@ -16,10 +17,8 @@ async function loadDay(date) {
   const sessions = await loadSessions(date, date)
   const groupIds = [...new Set(sessions.map((s) => s.group_id))]
   const savedIds = sessions.filter((s) => s.id).map((s) => s.id)
-  const [enrollments, absences, withBirthday, settings, lowStock] = await Promise.all([
-    groupIds.length
-      ? unwrap(supabase.from('enrollments').select('group_id, start_date, end_date, members(id, name, active)').in('group_id', groupIds))
-      : [],
+  const [signups, absences, withBirthday, settings, lowStock] = await Promise.all([
+    loadSignups(groupIds),
     savedIds.length
       ? unwrap(supabase.from('absences').select('session_id').in('session_id', savedIds).is('deleted_at', null))
       : [],
@@ -34,7 +33,7 @@ async function loadDay(date) {
     birthdayMessage: settings.birthday_message,
     sessions: sessions.map((s) => ({
       ...s,
-      memberCount: membersOn(enrollments.filter((e) => e.group_id === s.group_id), s.date).length,
+      memberCount: rosterFor(s, signups).length,
       absentCount: absences.filter((a) => a.session_id === s.id).length,
     })),
   }

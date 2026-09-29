@@ -1,5 +1,22 @@
-// Member helpers: age and birthdays.
+// Member helpers: the add/edit form's choices, age and birthdays.
+import { supabase } from './supabase.js'
+import { unwrap } from './useLoad.js'
 import { todayISO } from './format.js'
+
+// What the add and edit forms offer: active classes with their weekly
+// times (for the times picker) and active plans.
+export async function loadMemberOptions() {
+  const [groups, plans] = await Promise.all([
+    unwrap(supabase.from('groups').select('id, name, group_slots(*)').eq('active', true).order('name')),
+    unwrap(supabase.from('plans').select('id, name, times_per_week').eq('active', true).order('name')),
+  ])
+  return { groups, plans }
+}
+
+// The chosen plan's classes per week, or null (no plan / not set).
+export function timesPerWeek(plans, planId) {
+  return plans.find((p) => String(p.id) === String(planId))?.times_per_week ?? null
+}
 
 const isLeapYear = (y) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0
 

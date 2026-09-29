@@ -1639,3 +1639,116 @@ textarea {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* ───────── Round 4: picking a member's weekly times */
+.slot-picker {
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+}
+.slot-picker legend {
+  margin-bottom: 0.5rem;
+  padding: 0;
+  font-weight: 600;
+}
+.picker-class {
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.picker-class h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+/* 8:30  [Lu][Mi][Vi]  [Todo el turno] */
+.picker-turno {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-top: 1px solid var(--border);
+}
+.picker-turno:first-of-type {
+  border-top: none;
+}
+.picker-time {
+  min-width: 3.2em;
+  font-weight: 800;
+}
+.picker-days {
+  display: flex;
+  gap: 0.35rem;
+}
+.picker-days button,
+.picker-all {
+  min-height: var(--tap);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+.picker-days button {
+  min-width: var(--tap);
+  padding: 0;
+}
+.picker-days button[aria-pressed='true'] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-text);
+}
+.picker-all {
+  margin-left: auto;
+  padding: 0 0.75rem;
+  color: var(--primary-ink);
+  font-size: 0.95rem;
+}
+.picker-summary {
+  margin: 0.5rem 0 0;
+  font-weight: 600;
+}
+.slot-picker .stock-warning {
+  margin: 0.5rem 0 0;
+}
+
+/* "Falta elegir horarios" */
+.pending-chip {
+  align-self: flex-start;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: var(--warn-text);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+/* Her times on her screen: one per line */
+.group-links {
+  margin: 1rem 0;
+}
+.time-list {
+  margin: 0.25rem 0 0;
+  padding-left: 1.2rem;
+}
+.time-list li {
+  padding: 0.15rem 0;
+}
+/* On Chicas: "Falta elegir horarios a 3 chicas", tap to filter them */
+.pending-banner {
+  width: 100%;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+/* Class screen: its chicas under each turno */
+.turno-members h3 {
+  margin: 1rem 0 0.25rem;
+  font-size: 1.1rem;
+}
+/* Planes: "Clases por semana" not set yet */
+.needs-value select {
+  border-color: var(--warn-text);
+}

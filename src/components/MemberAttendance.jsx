@@ -5,7 +5,10 @@ import { formatRate, loadAttendance } from '../lib/attendance.js'
 
 // One line on the member screen: "Asistencia este año: 90% (18 de 20 clases)".
 export default function MemberAttendance({ member }) {
-  const groupIds = [...new Set(member.enrollments.map((e) => e.group_id))]
+  // Every class she has been on (by time or whole class), past ones too.
+  const groupIds = [
+    ...new Set([...member.slot_enrollments.map((e) => e.group_slots.group_id), ...member.enrollments.map((e) => e.group_id)]),
+  ]
   const today = todayISO()
   const result = useLoad(
     () => (groupIds.length ? loadAttendance(today.slice(0, 4) + '-01-01', today, groupIds) : Promise.resolve(null)),

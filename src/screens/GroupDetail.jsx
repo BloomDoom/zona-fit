@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase.js'
 import { unwrap, useLoad } from '../lib/useLoad.js'
 import { addDays, formatDay, formatDuration, formatTime, todayISO, weekdayName } from '../lib/format.js'
 import { loadSessions, sessionPath } from '../lib/sessions.js'
-import { activeSlots, currentEnrollments } from '../lib/groups.js'
+import { activeSlots, classMembers, daysShort, turnos } from '../lib/groups.js'
+import { current } from '../lib/roster.js'
 import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from '../components/Toast.jsx'
 import LoadState from '../components/LoadState.jsx'
@@ -14,7 +15,7 @@ function loadGroup(id) {
   return unwrap(
     supabase
       .from('groups')
-      .select('*, group_slots(*), enrollments(id, end_date, members(id, name, active))')
+      .select('*, group_slots(*, slot_enrollments(end_date, members(id, name, active))), enrollments(end_date, members(id, name, active))')
       .eq('id', id)
       .single(),
   )
@@ -158,8 +159,11 @@ function NextClasses({ group }) {
   )
 }
 
+// The class's chicas, by turno. Someone who only comes some of the
+// turno's days shows them: "Ana · solo Lu".
 function Members({ group }) {
-  const members = currentEnrollments(group.enrollments)
+  const members = classMembers(group)
+  const pending = current(group.enrollments)
     .map((e) => e.members)
     .filter((m) => m.active)
     .sort((a, b) => a.name.localeCompare(b.name, 'es'))
@@ -168,19 +172,64 @@ function Members({ group }) {
     <section className="section">
       <h2>Chicas ({members.length})</h2>
       {members.length === 0 && <p className="empty">Todavía no hay chicas en esta clase.</p>}
-      <ul className="row-list">
-        {members.map((m) => (
-          <li key={m.id}>
-            <Link to={`/members/${m.id}`} className="row-link">{m.name} ›</Link>
-          </li>
-        ))}
-      </ul>
+      {turnos(group.group_slots).map((t) => {
+        const people = turnoMembers(t)
+        return (
+          <div key={t.time} className="turno-members">
+            <h3>
+              {formatTime(t.time)} <span className="muted">· {daysShort(t.slots)} · {people.length}</span>
+            </h3>
+            {people.length === 0 ? (
+              <p className="muted">Nadie en este turno.</p>
+            ) : (
+              <ul className="row-list">
+                {people.map(({ member, days }) => (
+                  <li key={member.id}>
+                    <Link to={`/members/${member.id}`} className="row-link">
+                      {member.name}
+                      {days.length < t.slots.length && <span className="muted"> · solo {daysShort(days)}</span>} ›
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
+      })}
+      {pending.length > 0 && (
+        <div className="turno-members">
+          <h3>Falta elegir horarios <span className="muted">· {pending.length}</span></h3>
+          <p className="muted">Aparecen en todas las listas de esta clase hasta que les elijas los horarios.</p>
+          <ul className="row-list">
+            {pending.map((m) => (
+              <li key={m.id}>
+                <Link to={`/members/${m.id}`} className="row-link">{m.name} ›</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {members.length > 0 && (
         <Link to={`/groups/${group.id}/message`} className="btn-primary">Mandar mensaje a la clase</Link>
       )}
       <Link to={`/members/new?group=${group.id}`} className="btn-secondary">+ Agregar chicas a esta clase</Link>
     </section>
   )
+}
+
+// Active members on a turno, each with the days of it she comes:
+// [{ member, days: [slot, ...] }]  A–Z
+function turnoMembers(turno) {
+  const byId = new Map()
+  for (const slot of turno.slots) {
+    for (const e of current(slot.slot_enrollments)) {
+      if (!e.members.active) continue
+      const entry = byId.get(e.members.id) || { member: e.members, days: [] }
+      entry.days.push(slot)
+      byId.set(e.members.id, entry)
+    }
+  }
+  return [...byId.values()].sort((a, b) => a.member.name.localeCompare(b.member.name, 'es'))
 }
 
 function Details({ group, reload }) {

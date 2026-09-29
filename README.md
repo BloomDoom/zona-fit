@@ -40,6 +40,16 @@ public/                     icons (copied as-is)
 **Words:** in the code a class is a `group` (the table is `groups`), one class
 on one day is a `session`, and a socio is a `member`.
 
+**Who is on each list:** a member signs up to weekly *times* (`slot_enrollments`:
+one day + hour of a class), not to a whole class, so a "2 veces por semana"
+member can do Monday 8:30 in one class and Thursday 16:30 in another. A
+*turno* is just a class's times at the same hour (shown grouped, not stored).
+Members still signed up to a whole class (`enrollments`: loaded before times
+existed, or from a CSV import) show as "Falta elegir horarios" and stay on
+every list of that class until their times are chosen (see `src/lib/roster.js`).
+Plans are separate: they set the fee, and `times_per_week` only warns when
+the chosen times don't match.
+
 **How classes work:** weekly classes are never stored in advance. For each
 day the app calculates them from `group_slots`, and mixes in rows from
 `sessions` for classes that were cancelled, moved, had attendance saved, or
@@ -95,6 +105,8 @@ Editor and run it (this can't be undone).
 
 Then Clases → gear → **Importar desde una planilla**. Import in this order:
 plans, classes, members. Commas or semicolons both work (Excel in Spanish uses `;`).
+Members imported with a class show as "Falta elegir horarios" until their times
+are picked on their screen.
 
 ```
 nombre,precio
