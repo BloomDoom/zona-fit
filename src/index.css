@@ -1,0 +1,1497 @@
+/* ───────── Colors and sizes used everywhere. Change them here.
+   Placeholder gym colors (orange + charcoal) until Zona Fit's logo
+   arrives. Text colors keep 4.5:1 contrast or more on their backgrounds. */
+:root {
+  --bg: #f4f3f1;           /* light warm grey page background */
+  --surface: #ffffff;      /* cards */
+  --text: #1f2327;         /* near-black */
+  --muted: #545b61;        /* secondary text (6.6:1 on white) */
+  --border: #e0ddd8;
+  --primary: #c2410c;      /* orange: buttons, links, active tab (5.2:1 with white) */
+  --primary-dark: #8a2e08; /* orange text on a soft orange background */
+  --primary-text: #ffffff;
+  --danger: #b42318;       /* errors, overdue, absent */
+
+  /* Soft backgrounds + the dark text that goes on each */
+  --primary-soft: #fdebdf; /* hints, banners, totals */
+  --accent-soft: #e5ebf3;  /* class times */
+  --accent-text: #22406a;
+  --warn-soft: #fff1d6;    /* unpaid, running low */
+  --warn-text: #7a4a00;
+  --yellow-soft: #fff4d2;  /* birthdays */
+  --yellow: #f0cb6a;
+  --ok-soft: #e2f0dc;      /* present, paid */
+  --ok-text: #2c6534;
+  --bad-soft: #fbe1dc;     /* absent, overdue, out of stock */
+  --track: #e8e5e0;        /* empty part of progress bars */
+  --pressed: #f1eeea;      /* a card while it's being tapped */
+
+  /* Soft shadow instead of borders around cards */
+  --shadow: 0 1px 2px rgba(20, 20, 20, 0.06), 0 6px 18px rgba(20, 20, 20, 0.07);
+
+  --tap: 48px;            /* minimum height of anything you can tap */
+  --tab-bar-height: 64px;
+  --home-raise: 24px;     /* how far the round Home button sticks up above the tab bar */
+  --radius: 16px;         /* buttons and fields */
+  --radius-card: 20px;    /* cards */
+}
+
+/* ───────── Text size + iOS Dynamic Type
+   -apple-system-body uses the text size chosen in the iPhone's
+   Settings → Display → Text Size. Everything else uses "rem", which is
+   relative to that, so the whole app grows with her setting.
+   Other browsers fall back to 17px. */
+html {
+  font-size: 17px;
+}
+@supports (font: -apple-system-body) {
+  html {
+    font: -apple-system-body;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  /* Nunito: rounded and friendly. It's bundled with the app
+     (see main.jsx), so it works offline. The size still comes from the
+     iPhone's text size setting (above). */
+  font-family: 'Nunito Variable', -apple-system, system-ui, 'Segoe UI', sans-serif;
+  font-size: 1.0625rem; /* 18px at the default iPhone text size */
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  /* Keep content out from under the Dynamic Island / status bar. */
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+h1 {
+  font-size: 1.75rem;
+  margin: 0.5rem 0 1rem;
+}
+
+/* ───────── Screen layout */
+.screen {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem;
+  /* Leave room so the tab bar never covers the last item. */
+  padding-bottom: calc(var(--tab-bar-height) + var(--home-raise) + env(safe-area-inset-bottom) + 1.5rem);
+}
+
+.screen.center {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Explains what to do when a list is still empty. */
+.empty {
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+.error {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* "‹ Back" stays pinned at the top of the screen while scrolling.
+   The negative margin stretches its background band edge to edge. */
+.back-link {
+  position: sticky;
+  top: env(safe-area-inset-top);
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  width: calc(100% + 2rem);
+  min-height: var(--tap);
+  margin: -1rem -1rem 0;
+  padding: 0.25rem 1rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  color: var(--primary);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+}
+
+/* ───────── Buttons and form fields */
+button,
+input,
+select,
+textarea {
+  font: inherit; /* form fields don't inherit the font by default */
+}
+
+.btn-primary,
+.btn-secondary {
+  display: block;
+  width: 100%;
+  min-height: 56px;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-text);
+  border: none;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--primary);
+  border: 2px solid var(--primary);
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap);
+  height: var(--tap);
+  color: var(--text);
+}
+
+.btn-icon svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+input,
+select,
+textarea {
+  display: block;
+  width: 100%;
+  min-height: var(--tap);
+  margin-top: 0.35rem;
+  padding: 0.6rem 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 400;
+}
+
+/* Safari on iPhone draws time/date boxes its own way (fixed width,
+   different height). Turning that off makes them match the other boxes.
+   Tapping still opens the iPhone time/date wheel. */
+input[type='time'],
+input[type='date'] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 0;
+}
+input::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.45em;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* ───────── Login */
+.login {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-bottom: 1rem;
+}
+
+.login h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+/* ───────── Offline message */
+.offline-banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--danger);
+  color: #fff;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ───────── Bottom tab bar */
+.tab-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  /* Stay above the iPhone's home indicator bar. */
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.tab {
+  flex: 1;
+  height: var(--tab-bar-height);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--muted);
+  /* The tab bar has a fixed height, so its labels stop growing at 15px,
+     like the iPhone's own apps. The rest of the app grows with her text. */
+  font-size: min(0.9rem, 15px);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tab svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* NavLink adds the "active" class to the current tab. */
+.tab.active {
+  color: var(--primary);
+}
+
+/* ───────── Phase 2: lists, cards, forms */
+h2 {
+  font-size: 1.3rem;
+  margin: 0 0 0.75rem;
+}
+
+.section {
+  margin-top: 2rem;
+}
+
+.optional {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.success {
+  color: var(--ok-text);
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  background: var(--border);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+a {
+  color: var(--primary);
+}
+
+/* Links that look like buttons */
+a.btn-primary,
+a.btn-secondary,
+label.btn-secondary {
+  text-align: center;
+  text-decoration: none;
+  line-height: 1.6;
+}
+
+/* Space between buttons stacked on top of each other */
+.btn-primary + .btn-primary,
+.btn-secondary + .btn-secondary,
+.btn-primary + .btn-secondary,
+.btn-secondary + .btn-primary,
+.card-list + .btn-primary,
+.empty + .btn-primary,
+.empty + .btn-secondary,
+.row-list + .btn-secondary,
+.row-list + .btn-primary,
+.stack > * + * {
+  margin-top: 0.75rem;
+}
+
+/* Two buttons side by side */
+.btn-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.btn-row > * {
+  flex: 1;
+  margin-top: 0 !important;
+}
+
+/* A text-only button (e.g. "Remove") that is still easy to tap */
+.btn-text {
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0 0.5rem;
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Tappable cards (classes, members) */
+.card-list {
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-height: var(--tap);
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.card:active {
+  background: var(--pressed);
+}
+
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/* Simple rows: "Tuesday 18:00 ... Remove" */
+.row-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: var(--tap);
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.row-link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-height: var(--tap);
+  color: var(--text);
+  text-decoration: none;
+}
+
+/* A boxed area for small forms (add class time, change price) */
+.slot-box {
+  margin: 0.75rem 0;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.slot-fields {
+  display: grid;
+  /* minmax(0, 1fr) lets the columns shrink; plain 1fr won't go smaller
+     than the widest thing inside (the iPhone time picker). */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0 0.75rem;
+}
+.slot-fields label:first-child {
+  grid-column: 1 / -1; /* the day takes the full width */
+}
+
+.big-number {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+.big-number .muted {
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+/* Search box + filter on Socios */
+.filters {
+  margin-top: 1rem;
+}
+.filters input,
+.filters select {
+  margin-top: 0.5rem;
+}
+
+.contact {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.contact p {
+  margin: 0;
+}
+
+.notes {
+  white-space: pre-wrap; /* keep her line breaks */
+}
+
+fieldset {
+  margin: 0 0 1rem;
+  padding: 0;
+  border: none;
+}
+legend {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: var(--tap);
+  margin: 0;
+  font-weight: 400;
+}
+.checkbox-row input {
+  width: 26px;
+  min-height: 26px;
+  height: 26px;
+  margin: 0;
+  accent-color: var(--primary);
+}
+
+details summary {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.load-error {
+  padding: 1rem;
+  border: 2px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.load-error p {
+  margin-top: 0;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Undo / confirmation message, just above the tab bar */
+.toast {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: calc(var(--tab-bar-height) + var(--home-raise) + env(safe-area-inset-bottom) + 0.75rem);
+  z-index: 30;
+  max-width: 38rem;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  min-height: 56px;
+  background: var(--text);
+  color: #fff;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+.toast button {
+  min-height: var(--tap);
+  padding: 0 1rem;
+  background: none;
+  border: 2px solid #fff;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Import screen */
+.example {
+  overflow-x: auto;
+  padding: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+}
+
+.file-button {
+  display: block;
+  margin-top: 1rem;
+}
+.file-button input {
+  display: none; /* the whole label is the button */
+}
+
+.import-list .has-problem strong {
+  color: var(--danger);
+}
+
+/* ───────── Phase 3: Today, classes, attendance */
+button.back-link {
+  border: none;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+/* ‹  Today  › */
+.day-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: center;
+}
+.day-nav h1 {
+  margin: 0.25rem 0 0;
+}
+.day-nav p {
+  margin: 0 0 0.5rem;
+}
+.day-nav .btn-icon {
+  width: 56px;
+  height: 56px;
+  font-size: 2.2rem;
+  line-height: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.session-card {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.session-time {
+  min-width: 3.4em;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+.session-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.status {
+  font-weight: 600;
+}
+.status-done {
+  color: var(--ok-text);
+}
+.status-cancelled {
+  color: var(--danger);
+}
+.dimmed {
+  opacity: 0.6;
+}
+.dimmed .card-title {
+  text-decoration: line-through;
+}
+
+.class-when {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-top: -0.5rem;
+}
+
+.notice {
+  padding: 1rem;
+  border-radius: var(--radius);
+  background: var(--bad-soft);
+  color: var(--danger);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Attendance list: each member is one big button */
+.roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.roster-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 60px;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.roster-name {
+  font-weight: 600;
+}
+.roster-status {
+  flex-shrink: 0;
+  color: var(--ok-text);
+  font-weight: 600;
+}
+.roster-row.absent {
+  background: var(--bad-soft);
+  border-color: var(--danger);
+}
+.roster-row.absent .roster-status {
+  color: var(--danger);
+}
+
+/* The Save button stays visible at the bottom while scrolling the list */
+.save-bar {
+  position: sticky;
+  bottom: calc(var(--tab-bar-height) + var(--home-raise) + env(safe-area-inset-bottom));
+  margin-top: 1rem;
+  padding: 0.75rem 0;
+  background: var(--bg);
+}
+
+.slot-fields.two-equal label:first-child {
+  grid-column: auto; /* both fields side by side */
+}
+
+/* ───────── Phase 4: payments */
+.day-nav .btn-icon:disabled {
+  opacity: 0.3;
+}
+
+.summary {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.summary p {
+  margin: 0.25rem 0;
+}
+
+/* Collected vs expected bar */
+.progress {
+  height: 12px;
+  margin: 0.5rem 0;
+  background: var(--track);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress div {
+  height: 100%;
+  background: var(--ok-text);
+}
+
+.charge-card {
+  gap: 0.75rem;
+}
+.charge-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.charge-name {
+  display: flex;
+  flex-direction: column;
+  min-height: var(--tap);
+  justify-content: center;
+  color: var(--text);
+  text-decoration: none;
+}
+.charge-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  text-align: right;
+  font-weight: 600;
+}
+.charge-note {
+  margin: 0;
+}
+
+.chip {
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.chip-overdue {
+  background: var(--bad-soft);
+  color: var(--danger);
+}
+.chip-unpaid,
+.chip-partial {
+  background: var(--warn-soft);
+  color: var(--warn-text);
+}
+.chip-paid {
+  background: var(--ok-soft);
+  color: var(--ok-text);
+}
+
+.pay-panel {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+.pay-question {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+.method-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 4 methods in a 2×2 grid */
+  gap: 0.5rem;
+}
+
+/* Payments summary: collected per method */
+.method-totals {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0 0;
+  border-top: 1px solid var(--border);
+}
+.method-totals li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 1rem;
+  padding: 0.2rem 0;
+}
+.btn-cancel {
+  width: 100%;
+  color: var(--muted);
+}
+
+.payment-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.payment-lines li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1rem;
+}
+
+/* Banner links (Resumen, Planes y precios) */
+.info-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 56px;
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.info-banner span:last-child {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+/* ───────── Phase 6: accessibility */
+/* A clear outline when moving around with a keyboard (or iOS Full Keyboard Access) */
+:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none; /* these already get an orange border */
+}
+
+/* Links inside text (e.g. a member's classes) get a comfortable tap area */
+.group-links a {
+  display: inline-block;
+  min-height: var(--tap);
+  line-height: var(--tap);
+  font-weight: 600;
+}
+
+/* Respect "Bold Text"-style contrast needs: never go lighter than this */
+@media (prefers-contrast: more) {
+  :root {
+    --muted: #333333;
+    --border: #8a8478;
+  }
+  .dimmed {
+    opacity: 0.8;
+  }
+}
+
+/* ───────── Round 2: big text (she uses a large iPhone font)
+   Long names wrap instead of pushing the page sideways. */
+.card-title,
+.roster-name,
+.charge-name,
+.row-link {
+  overflow-wrap: anywhere;
+}
+/* Titles only break inside a word if that single word doesn't fit */
+h1,
+h2 {
+  overflow-wrap: break-word;
+}
+
+/* data-big-text is set by src/lib/bigText.js when the text size is large.
+   Everything goes into one column and nothing sticks over the content. */
+[data-big-text] .screen {
+  padding-bottom: calc(var(--tab-bar-height) + var(--home-raise) + env(safe-area-inset-bottom) + 4rem);
+}
+/* Titles grow less than body text, or a title alone fills the screen */
+[data-big-text] h1 {
+  font-size: 1.2rem;
+}
+[data-big-text] h2 {
+  font-size: 1.1rem;
+}
+[data-big-text] button,
+[data-big-text] a.btn-primary,
+[data-big-text] a.btn-secondary {
+  min-width: 0;
+  overflow-wrap: anywhere; /* "Mercado Pago" must fit inside its button */
+}
+[data-big-text] .save-bar {
+  position: static; /* a sticky Save bar would cover half the screen */
+}
+[data-big-text] .slot-fields {
+  grid-template-columns: minmax(0, 1fr);
+}
+[data-big-text] .slot-fields label:first-child {
+  grid-column: auto;
+}
+[data-big-text] .btn-row,
+[data-big-text] .charge-top,
+[data-big-text] .session-card,
+[data-big-text] .roster-row {
+  flex-direction: column;
+  align-items: stretch;
+}
+[data-big-text] .charge-right {
+  align-items: flex-start;
+  text-align: left;
+}
+[data-big-text] .roster-row {
+  text-align: left;
+}
+[data-big-text] .method-buttons,
+[data-big-text] .month-grid {
+  grid-template-columns: 1fr;
+}
+[data-big-text] .day-nav {
+  gap: 0.5rem;
+}
+[data-big-text] .day-nav .btn-icon {
+  flex-shrink: 0;
+}
+/* The Undo message is fixed on screen, so it stays a readable-but-limited size */
+[data-big-text] .toast {
+  font-size: min(1rem, 24px);
+  flex-wrap: wrap;
+}
+
+/* ───────── Socios list */
+/* Search + "+ Add" pinned at the top of the Socios list */
+.filters {
+  position: sticky;
+  top: env(safe-area-inset-top);
+  z-index: 12;
+  margin: 1rem -1rem 0;
+  padding: 0.5rem 1rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.filters-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.filters-row input {
+  flex: 1;
+  min-width: 0;
+  margin-top: 0;
+}
+.btn-add {
+  width: auto !important;
+  flex-shrink: 0;
+  min-height: var(--tap) !important;
+  padding: 0 1rem !important;
+  display: flex !important;
+  align-items: center;
+}
+
+/* A, B, C… headers in the Socios list */
+.letter-header {
+  margin: 1.25rem 0 -0.5rem;
+  color: var(--primary);
+  font-size: 1.2rem;
+}
+
+/* With big text the pinned bar would cover the list: let it scroll away,
+   and stack search and "+ Add". */
+[data-big-text] .filters {
+  position: static;
+}
+[data-big-text] .filters-row {
+  flex-direction: column;
+  align-items: stretch;
+}
+[data-big-text] .btn-add {
+  width: 100% !important;
+  justify-content: center;
+}
+
+/* ───────── Round 2: birthdays, group message */
+.birthdays {
+  margin: 0.75rem 0;
+}
+.birthday-card {
+  gap: 0.5rem;
+  background: var(--yellow-soft);
+  border: 2px solid var(--yellow);
+}
+.birthdays-soon {
+  margin: 0.5rem 0;
+}
+
+.send-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.send-row .btn-primary,
+.send-row .btn-secondary {
+  width: auto;
+  flex-shrink: 0;
+  min-height: var(--tap);
+  padding: 0.5rem 1.25rem;
+  display: flex;
+  align-items: center;
+}
+.send-row.sent {
+  opacity: 0.75;
+}
+[data-big-text] .send-row {
+  flex-direction: column;
+  align-items: stretch;
+}
+[data-big-text] .send-row .btn-primary,
+[data-big-text] .send-row .btn-secondary {
+  width: 100%;
+  justify-content: center;
+}
+
+/* ───────── Round 2: tab bar with the round Home button in the middle */
+.tab-home {
+  justify-content: flex-end;
+  padding-bottom: 6px;
+  color: var(--primary);
+}
+.home-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  margin-top: calc(-1 * var(--home-raise) - 6px); /* sticks up above the bar */
+  background: var(--primary);
+  color: var(--primary-text);
+  border: 4px solid var(--surface);
+  border-radius: 50%;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+}
+.home-circle svg {
+  width: 28px;
+  height: 28px;
+}
+/* Active Home: a ring around the circle, like the underline of the other tabs' color */
+.tab-home.active .home-circle {
+  box-shadow: 0 0 0 3px var(--primary), 0 3px 10px rgba(0, 0, 0, 0.25);
+}
+.tab-home:not(.active) {
+  color: var(--muted);
+}
+
+[data-big-text] .row-list li {
+  flex-wrap: wrap;
+}
+
+/* ───────── Round 2: attendance insights */
+.attendance-line {
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* ‹ Title › rows (Home, Payments, Attendance): the title may shrink and wrap.
+   With big text the title gets its own line and the arrows go below it,
+   otherwise a long word like "Attendance" pushes the page sideways. */
+.day-nav > div {
+  min-width: 0;
+}
+[data-big-text] .day-nav {
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem; /* keep the arrows off the button below */
+}
+[data-big-text] .day-nav > div {
+  order: -1;
+  flex-basis: 100%;
+}
+/* Banner links (Resumen, Planes): the text wraps so the › stays on screen */
+.info-banner > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.info-banner > span:last-child {
+  flex-shrink: 0;
+}
+
+/* ───────── Visual design
+   Everything that looks like a card gets the same soft shape: no border,
+   rounded corners and a gentle shadow. */
+.card,
+.slot-box,
+.contact,
+.summary,
+.roster-row,
+.load-error,
+.attendance-line {
+  border: none;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+  background: var(--surface);
+}
+.load-error {
+  box-shadow: inset 0 0 0 2px var(--danger), var(--shadow);
+}
+.card:active,
+.roster-row:active {
+  background: var(--pressed);
+}
+
+/* "Nothing here yet" boxes: soft and friendly, not a warning */
+.empty {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+h1,
+h2 {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.card-title {
+  font-weight: 800;
+}
+
+/* Labels (statuses, counts) are pills */
+.chip,
+.badge {
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+/* Buttons: a little rounder and bolder */
+.btn-primary,
+.btn-secondary {
+  border-radius: var(--radius);
+  font-weight: 800;
+}
+.btn-secondary {
+  background: var(--surface);
+}
+
+/* Fields */
+input,
+select,
+textarea {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+/* ‹ › round arrow buttons: white circles with a soft shadow */
+.day-nav .btn-icon {
+  border: none;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(20, 20, 20, 0.1), 0 3px 8px rgba(20, 20, 20, 0.08);
+}
+
+/* Inicio: the class time is a label */
+.session-time {
+  align-self: flex-start;
+  min-width: 0;
+  padding: 0.15rem 0.7rem;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border-radius: 999px;
+  font-size: 1.05rem;
+}
+.dimmed .session-time {
+  background: var(--track);
+  color: var(--muted);
+}
+
+/* Attendance list: Present / Absent are pills; an absent row turns soft red */
+.roster-status {
+  padding: 0.15rem 0.75rem;
+  background: var(--ok-soft);
+  color: var(--ok-text);
+  border-radius: 999px;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+.roster-row {
+  border: none;
+}
+.roster-row.absent {
+  background: var(--bad-soft);
+  box-shadow: inset 0 0 0 2px var(--danger);
+}
+.roster-row.absent .roster-status {
+  background: var(--surface);
+  color: var(--danger);
+}
+.save-bar {
+  background: linear-gradient(rgba(244, 243, 241, 0), var(--bg) 35%);
+}
+
+/* The "Everyone is marked present" hint on the class screen */
+.hint {
+  padding: 0.75rem 1rem;
+  background: var(--primary-soft);
+  border-radius: var(--radius-card);
+}
+
+/* Payments: totals per method as orange pills */
+.method-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-top: none;
+}
+.method-totals li {
+  padding: 0.2rem 0.8rem;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  border-radius: 999px;
+  font-size: 0.95rem;
+}
+.progress {
+  height: 14px;
+}
+.progress div {
+  background: var(--primary);
+  border-radius: 999px;
+}
+
+/* Banners (Resumen, Planes y precios) */
+.info-banner {
+  border-radius: var(--radius-card);
+  background: var(--primary-soft);
+  box-shadow: var(--shadow);
+}
+
+/* Birthday card: yellow */
+.birthday-card {
+  border: none;
+  background: var(--yellow-soft);
+  box-shadow: inset 0 0 0 2px var(--yellow), var(--shadow);
+}
+
+/* Tab bar: white with a soft shadow; Inicio keeps its orange circle */
+.tab-bar {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 16px rgba(20, 20, 20, 0.06);
+}
+.home-circle {
+  width: 64px;
+  height: 64px;
+  border: 5px solid var(--surface);
+  box-shadow: 0 4px 12px rgba(194, 65, 12, 0.35);
+}
+.tab-home.active .home-circle {
+  box-shadow: 0 0 0 3px var(--primary), 0 4px 12px rgba(194, 65, 12, 0.35);
+}
+
+/* Undo message */
+.toast {
+  border-radius: var(--radius-card);
+}
+
+/* Inicio header: title + arrows */
+.home-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.home-header .title {
+  flex: 1;
+  min-width: 0;
+}
+.home-header h1 {
+  margin: 0;
+}
+.home-header p {
+  margin: 0;
+  font-weight: 700;
+}
+.home-arrows {
+  display: flex;
+  gap: 0.5rem;
+}
+/* With big text: the arrows go on the first row, and the title gets the
+   whole row below it, so a long day name never breaks. */
+[data-big-text] .home-header {
+  flex-wrap: wrap;
+}
+[data-big-text] .home-header .title {
+  order: 2;
+  flex-basis: 100%;
+}
+[data-big-text] .home-arrows {
+  order: 1;
+  flex: 1;
+  justify-content: flex-end;
+}
+/* Card titles grow like normal text (not faster), so names still fit */
+[data-big-text] .card-title {
+  font-size: 1.0625rem;
+}
+
+/* Login: the logo */
+.login-logo {
+  display: block;
+  width: min(72vw, 300px);
+  height: auto;
+  margin: 0 auto 1.5rem;
+  border-radius: 32px;
+  box-shadow: 0 10px 30px rgba(20, 20, 20, 0.18);
+}
+
+/* Call / WhatsApp buttons with their icons */
+.contact .btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.contact .btn-secondary svg,
+.icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The Home screen's ‹ › buttons, same look as the other screens' arrows */
+.round-btn {
+  width: 52px;
+  height: 52px;
+  font-size: 2rem;
+  line-height: 1;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(20, 20, 20, 0.1), 0 3px 8px rgba(20, 20, 20, 0.08);
+  cursor: pointer;
+}
+[data-big-text] .round-btn {
+  font-size: 1.4rem; /* the ‹ › symbol stays inside its circle */
+}
+
+/* At the biggest text sizes, spacing measured in rem grows too (1rem =
+   50px+), eating the room words need. Cap the side padding of screens and
+   cards, and the title size, so long words like "Wednesday" still fit. */
+[data-big-text] .screen {
+  padding-left: min(1rem, 16px);
+  padding-right: min(1rem, 16px);
+}
+[data-big-text] .back-link,
+[data-big-text] .filters {
+  margin-left: calc(-1 * min(1rem, 16px));
+  margin-right: calc(-1 * min(1rem, 16px));
+  width: calc(100% + 2 * min(1rem, 16px));
+  padding-left: min(1rem, 16px);
+  padding-right: min(1rem, 16px);
+}
+[data-big-text] .card,
+[data-big-text] .slot-box,
+[data-big-text] .contact,
+[data-big-text] .summary,
+[data-big-text] .roster-row,
+[data-big-text] .hint,
+[data-big-text] .info-banner,
+[data-big-text] .attendance-line,
+[data-big-text] .empty {
+  padding-left: min(1rem, 16px);
+  padding-right: min(1rem, 16px);
+}
+[data-big-text] h1 {
+  font-size: min(1.2rem, 46px);
+}
+
+/* Group message: the one-time broadcast list setup */
+.setup-box {
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow);
+}
+.setup-steps {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.4rem;
+}
+.setup-steps li {
+  margin-bottom: 0.75rem;
+}
+.setup-steps .btn-secondary {
+  margin: 0.5rem 0 0.25rem;
+}
+.setup-steps .muted {
+  display: block;
+  font-size: 0.95rem;
+}
+
+/* ───────── Tienda */
+.product-card {
+  gap: 0.75rem;
+}
+.product-card.out-of-stock {
+  box-shadow: inset 0 0 0 2px var(--danger), var(--shadow);
+}
+
+/* −  2 · $ 3.000  + */
+.qty-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.qty-btn {
+  width: 56px !important;
+  flex-shrink: 0;
+  font-size: 1.6rem;
+  line-height: 1;
+  padding: 0 !important;
+}
+.qty-value {
+  flex: 1;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+.qty-value .muted {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* ───────── Planes */
+.plan-card {
+  gap: 0.5rem;
+}
+.plan-card p {
+  margin: 0;
+}
