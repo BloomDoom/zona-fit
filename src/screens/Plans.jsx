@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { unwrap, useLoad } from '../lib/useLoad.js'
 import { addMonths, currentMonthISO, formatMoney, formatMonth, parseAmount, plural } from '../lib/format.js'
-import { priceForMonth } from '../lib/groups.js'
+import { planName, priceForMonth } from '../lib/groups.js'
 import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from '../components/Toast.jsx'
 import LoadState from '../components/LoadState.jsx'
@@ -37,6 +37,8 @@ export default function Plans() {
   const plans = result.data
   const active = plans?.filter((p) => p.active) ?? []
   const inactive = plans?.filter((p) => !p.active) ?? []
+  // "veces por semana" already offered, so no two active plans share one
+  const takenBy = (plan) => active.filter((p) => p !== plan && p.times_per_week).map((p) => p.times_per_week)
 
   return (
     <main className="screen">
@@ -53,12 +55,12 @@ export default function Plans() {
           <ul className="card-list">
             {active.map((plan) => (
               <li key={plan.id}>
-                <PlanCard plan={plan} reload={result.reload} />
+                <PlanCard plan={plan} reload={result.reload} takenTimes={takenBy(plan)} />
               </li>
             ))}
           </ul>
 
-          <NewPlan reload={result.reload} />
+          <NewPlan reload={result.reload} taken={takenBy(null)} />
 
           {inactive.length > 0 && (
             <details className="section">
@@ -66,7 +68,7 @@ export default function Plans() {
               <ul className="card-list">
                 {inactive.map((plan) => (
                   <li key={plan.id}>
-                    <PlanCard plan={plan} reload={result.reload} />
+                    <PlanCard plan={plan} reload={result.reload} takenTimes={takenBy(plan)} />
                   </li>
                 ))}
               </ul>
@@ -78,13 +80,13 @@ export default function Plans() {
   )
 }
 
-function PlanCard({ plan, reload }) {
+function PlanCard({ plan, reload, takenTimes }) {
   const showToast = useToast()
   const thisMonth = currentMonthISO()
-  const [changing, setChanging] = useState(null) // null, 'price' or 'name'
+  const [changing, setChanging] = useState(null) // null, 'price' or 'times'
   const [amount, setAmount] = useState('')
   const [month, setMonth] = useState(thisMonth)
-  const [name, setName] = useState(plan.name)
+  const [times, setTimes] = useState(plan.times_per_week)
   const [error, setError] = useState('')
 
   const current = priceForMonth(plan.plan_prices, thisMonth)
@@ -119,13 +121,15 @@ function PlanCard({ plan, reload }) {
     }
   }
 
-  async function saveName(e) {
+  // The name always follows the number, so changing one changes both.
+  async function saveTimes(e) {
     e.preventDefault()
     setError('')
-    const ok = await save(() => unwrap(supabase.from('plans').update({ name: name.trim() }).eq('id', plan.id)), {
-      ...opts,
-      message: 'Nombre guardado',
-    })
+    if (!times) return setError('Elegí cuántas veces por semana.')
+    const ok = await save(
+      () => unwrap(supabase.from('plans').update({ times_per_week: times, name: planName(times) }).eq('id', plan.id)),
+      { ...opts, message: `Ahora es ${planName(times)}` },
+    )
     if (ok) setChanging(null)
   }
 
@@ -154,16 +158,10 @@ function PlanCard({ plan, reload }) {
         <p key={p.id}>Desde {formatMonth(p.effective_month)}: <strong>{formatMoney(p.amount)}</strong></p>
       ))}
       <p className="muted">{plural(plan.memberCount, 'chica activa', 'chicas activas')}</p>
-      {plan.active && (
-        <TimesPerWeekField
-          value={plan.times_per_week}
-          onChange={(n) =>
-            save(() => unwrap(supabase.from('plans').update({ times_per_week: n }).eq('id', plan.id)), {
-              ...opts,
-              message: n ? `${plan.name}: ${n} por semana` : 'Guardado',
-            })
-          }
-        />
+      {!plan.times_per_week && changing === null && (
+        <p className="stock-warning">
+          Falta decir cuántas veces por semana es este plan. Tocá “Más opciones” → “Cambiar veces por semana”.
+        </p>
       )}
 
       {changing === 'price' && (
@@ -188,15 +186,13 @@ function PlanCard({ plan, reload }) {
         </form>
       )}
 
-      {changing === 'name' && (
-        <form onSubmit={saveName} className="slot-box">
-          <label>
-            Nombre del plan
-            <input value={name} onChange={(e) => setName(e.target.value)} required autoFocus />
-          </label>
+      {changing === 'times' && (
+        <form onSubmit={saveTimes} className="slot-box">
+          <TimesPerWeekField value={times} onChange={setTimes} taken={takenTimes} />
+          <p className="muted">Las chicas de este plan siguen en él; solo cambia cuántas veces por semana es.</p>
           <div className="btn-row">
             <button type="button" className="btn-secondary" onClick={() => setChanging(null)}>Cancelar</button>
-            <button className="btn-primary">Guardar nombre</button>
+            <button className="btn-primary">Guardar</button>
           </div>
         </form>
       )}
@@ -217,7 +213,7 @@ function PlanCard({ plan, reload }) {
                   ))}
                 </ul>
               )}
-              <button className="btn-secondary" onClick={() => setChanging('name')}>Cambiar nombre</button>
+              <button className="btn-secondary" onClick={() => setChanging('times')}>Cambiar veces por semana</button>
               <button className="btn-secondary" onClick={toggleActive}>
                 {plan.active ? 'Dar de baja este plan' : 'Volver a ofrecer este plan'}
               </button>
@@ -233,25 +229,26 @@ function PlanCard({ plan, reload }) {
   )
 }
 
-// How many classes a week the plan includes. Used to warn when a
-// member's chosen times don't match her plan (it never blocks saving).
-function TimesPerWeekField({ value, onChange }) {
+// How many classes a week: that's what a plan is. Numbers another
+// active plan already has can't be picked (one plan per number).
+function TimesPerWeekField({ value, onChange, taken }) {
   return (
-    <label className={value ? '' : 'needs-value'}>
-      Clases por semana <span className="optional">(para avisar si sus horarios no coinciden)</span>
-      <select value={value ?? ''} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}>
-        <option value="">Sin definir</option>
+    <label>
+      ¿Cuántas veces por semana?
+      <select value={value ?? ''} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)} required>
+        <option value="">Elegí</option>
         {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-          <option key={n} value={n}>{n}</option>
+          <option key={n} value={n} disabled={taken.includes(n)}>
+            {planName(n)}{taken.includes(n) ? ' (ya existe)' : ''}
+          </option>
         ))}
       </select>
     </label>
   )
 }
 
-function NewPlan({ reload }) {
+function NewPlan({ reload, taken }) {
   const showToast = useToast()
-  const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [timesPerWeek, setTimesPerWeek] = useState(null)
   const [error, setError] = useState('')
@@ -260,16 +257,16 @@ function NewPlan({ reload }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    if (!timesPerWeek) return setError('Elegí cuántas veces por semana.')
     const amount = parseAmount(price)
     if (amount === null) return setError('Escribí el precio por mes, por ejemplo 25000.')
     setBusy(true)
     try {
       const plan = await unwrap(
-        supabase.from('plans').insert({ name: name.trim(), times_per_week: timesPerWeek }).select().single(),
+        supabase.from('plans').insert({ name: planName(timesPerWeek), times_per_week: timesPerWeek }).select().single(),
       )
       await unwrap(supabase.from('plan_prices').insert({ plan_id: plan.id, amount, effective_month: currentMonthISO() }))
       showToast(`${plan.name} creado`)
-      setName('')
       setPrice('')
       setTimesPerWeek(null)
       reload()
@@ -282,15 +279,11 @@ function NewPlan({ reload }) {
   return (
     <form onSubmit={handleSubmit} className="section slot-box">
       <h2>Nuevo plan</h2>
-      <label>
-        Nombre
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="ej. 3 veces por semana" required />
-      </label>
+      <TimesPerWeekField value={timesPerWeek} onChange={setTimesPerWeek} taken={taken} />
       <label>
         Precio por mes
         <input inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="ej. 25000" required />
       </label>
-      <TimesPerWeekField value={timesPerWeek} onChange={setTimesPerWeek} />
       {error && <p className="error" role="alert">{error}</p>}
       <button className="btn-primary" disabled={busy}>{busy ? 'Guardando…' : 'Crear plan'}</button>
     </form>

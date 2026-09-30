@@ -55,6 +55,16 @@ export function classMembers(group) {
 export const slotLabel = (slot, groupName) =>
   `${weekdayName(slot.weekday).slice(0, 3)} ${formatTime(slot.start_time)} · ${groupName}`
 
+// A plan IS how many classes a week it includes; its name is made from
+// that number, never typed: 2 → "2 veces por semana".
+export const planName = (timesPerWeek) => (timesPerWeek === 1 ? '1 vez por semana' : `${timesPerWeek} veces por semana`)
+
+// The number in a plan name typed by hand ("3 veces x semana" → 3), or null.
+export function timesFromName(name) {
+  const n = Number(name.match(/\d+/)?.[0])
+  return n >= 1 && n <= 7 ? n : null
+}
+
 // The price row that applies to a month: the latest one starting on or
 // before that month. null if the plan has no price for it yet.
 export function priceForMonth(prices, month = currentMonthISO()) {

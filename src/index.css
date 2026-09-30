@@ -1748,7 +1748,3 @@ textarea {
   margin: 1rem 0 0.25rem;
   font-size: 1.1rem;
 }
-/* Planes: "Clases por semana" not set yet */
-.needs-value select {
-  border-color: var(--warn-text);
-}

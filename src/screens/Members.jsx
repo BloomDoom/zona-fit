@@ -6,6 +6,7 @@ import { normalize } from '../lib/groups.js'
 import { current } from '../lib/roster.js'
 import { formatTime, weekdayName } from '../lib/format.js'
 import LoadState from '../components/LoadState.jsx'
+import AutoFillTimes from '../components/AutoFillTimes.jsx'
 
 async function loadMembers() {
   const [members, groups, plans] = await Promise.all([
@@ -117,6 +118,8 @@ export default function Members() {
               <option value="inactive">Dadas de baja</option>
             </select>
           </div>
+
+          {filter === 'pending' && <AutoFillTimes onDone={result.reload} />}
 
           {result.data.members.length === 0 ? (
             <p className="empty">Todavía no hay chicas. Tocá “+ Agregar” para cargar las primeras.</p>

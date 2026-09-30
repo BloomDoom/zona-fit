@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase.js'
 import { unwrap } from '../lib/useLoad.js'
 import { parseCsv } from '../lib/csv.js'
 import { currentMonthISO, formatMoney, parseAmount, parseDate, todayISO } from '../lib/format.js'
-import { normalize } from '../lib/groups.js'
+import { normalize, planName, timesFromName } from '../lib/groups.js'
 import { loadErrorMessage, saveErrorMessage } from '../lib/errors.js'
 
 // Bulk import of plans, classes and members from CSV files, for loading
@@ -91,16 +91,18 @@ async function checkGroups(rows) {
 
 async function checkMembers(rows) {
   const [plans, groups, existing] = await Promise.all([
-    unwrap(supabase.from('plans').select('id, name')),
+    unwrap(supabase.from('plans').select('id, name, times_per_week').eq('active', true)),
     unwrap(supabase.from('groups').select('id, name')),
     unwrap(supabase.from('members').select('name')),
   ])
   const planIds = new Map(plans.map((p) => [normalize(p.name), p.id]))
+  const planByTimes = new Map(plans.filter((p) => p.times_per_week).map((p) => [p.times_per_week, p.id]))
   const groupIds = new Map(groups.map((g) => [normalize(g.name), g.id]))
 
   return checkRows(rows, existing.map((m) => m.name), (row) => {
-    const planId = row.plan ? planIds.get(normalize(row.plan)) : null
-    if (row.plan && !planId) throw new Error(`no hay un plan que se llame "${row.plan}" (importá los planes primero)`)
+    // "3", "3 veces x semana" or the exact name all find the 3-a-week plan
+    const planId = row.plan ? planIds.get(normalize(row.plan)) ?? planByTimes.get(timesFromName(row.plan)) : null
+    if (row.plan && !planId) throw new Error(`no hay un plan de "${row.plan}" (creá los planes primero)`)
     const groupId = row.clase ? groupIds.get(normalize(row.clase)) : null
     if (row.clase && !groupId) throw new Error(`no hay una clase que se llame "${row.clase}" (importá las clases primero)`)
     const startDate = row.empezo ? parseDate(row.empezo) : todayISO()
@@ -130,7 +132,12 @@ const CHECK = { plans: checkPlans, groups: checkGroups, members: checkMembers }
 
 const IMPORT = {
   async plans({ name, price }) {
-    const plan = await unwrap(supabase.from('plans').insert({ name }).select().single())
+    // A plan is its "veces por semana": "3 veces x semana" is saved as 3,
+    // named "3 veces por semana".
+    const times = timesFromName(name)
+    const plan = await unwrap(
+      supabase.from('plans').insert({ name: times ? planName(times) : name, times_per_week: times }).select().single(),
+    )
     await unwrap(supabase.from('plan_prices').insert({ plan_id: plan.id, amount: price, effective_month: currentMonthISO() }))
   },
   async groups({ name, notes, slots }) {
