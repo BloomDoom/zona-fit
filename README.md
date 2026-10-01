@@ -50,6 +50,11 @@ every list of that class until their times are chosen (see `src/lib/roster.js`).
 Plans are separate: they set the fee, and `times_per_week` only warns when
 the chosen times don't match.
 
+**Clothes with the chicas:** a product's `stock` is what's on the rack
+(perchero). Nadia lends clothes to a chica to try (`loan_moves`: lent /
+returned / sold); later she buys some (a sale with `member_id`, no stock
+change) and gives the rest back (stock goes up). Tienda lists who has what.
+
 **How classes work:** weekly classes are never stored in advance. For each
 day the app calculates them from `group_slots`, and mixes in rows from
 `sessions` for classes that were cancelled, moved, had attendance saved, or

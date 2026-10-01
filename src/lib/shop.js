@@ -1,5 +1,7 @@
 // Shop (tienda): products, sales, stock and the shop's wallet.
 //
+// products.stock is what's on the rack (perchero); clothes a chica took
+// to try are counted apart (see "Clothes with the chicas" below).
 // Stock is never changed directly from the app: the database functions
 // record_sale, undo_sale, restock, undo_restock and add_stock (see
 // schema.sql) change the sale or purchase and the stock together, so
@@ -101,4 +103,56 @@ export async function addMove(kind, amount, note) {
 export function removeMove(move) {
   if (move.kind === 'purchase') return undoRestock(move.id)
   return unwrap(supabase.from('shop_moves').update({ deleted_at: new Date().toISOString() }).eq('id', move.id))
+}
+
+// ───────── Clothes with the chicas
+// Nadia gives clothes to a chica to try; later she buys them or gives them
+// back. products.stock counts only the rack (perchero), so taking one
+// lowers it and giving it back raises it; buying leaves it as it is.
+
+// [{ member_id, member_name, product_id, product_name, price, qty, since }]
+export function loadOpenLoans() {
+  return unwrap(supabase.rpc('open_loans'))
+}
+
+// Active members A–Z, for "¿Quién se lo lleva?".
+export function loadActiveMembers() {
+  return unwrap(supabase.from('members').select('id, name').eq('active', true).order('name'))
+}
+
+// She takes qty from the rack. Returns the move id (for Undo).
+export function lendProduct(productId, memberId, qty) {
+  return unwrap(supabase.rpc('lend_product', { p_product: productId, p_member: memberId, p_qty: qty }))
+}
+
+// She gives qty back to the rack. Returns the move id (for Undo).
+export function returnLoan(productId, memberId, qty) {
+  return unwrap(supabase.rpc('return_loan', { p_product: productId, p_member: memberId, p_qty: qty }))
+}
+
+// Undo a "se llevó" or "devolvió".
+export function undoLoanMove(moveId) {
+  return unwrap(supabase.rpc('undo_loan_move', { p_move: moveId }))
+}
+
+// She buys qty of what she has. Returns the sale id (undo with undoSale).
+export function sellLoan(productId, memberId, qty, method) {
+  return unwrap(supabase.rpc('sell_loan', { p_product: productId, p_member: memberId, p_qty: qty, p_method: method }))
+}
+
+// Open loans grouped by chica: [{ member_id, member_name, items: [...] }]
+export function loansByMember(loans) {
+  const byMember = new Map()
+  for (const loan of loans) {
+    if (!byMember.has(loan.member_id)) byMember.set(loan.member_id, { member_id: loan.member_id, member_name: loan.member_name, items: [] })
+    byMember.get(loan.member_id).items.push(loan)
+  }
+  return [...byMember.values()]
+}
+
+// How many of each product are with the chicas: { productId: qty }
+export function lentByProduct(loans) {
+  const totals = {}
+  for (const loan of loans) totals[loan.product_id] = (totals[loan.product_id] || 0) + loan.qty
+  return totals
 }

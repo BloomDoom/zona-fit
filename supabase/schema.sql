@@ -167,7 +167,9 @@ create table payments (
 
 -- ───────────────────────── Shop (tienda)
 -- stock is only changed by the functions further down (record_sale,
--- undo_sale, add_stock), so it always matches the sales.
+-- undo_sale, add_stock, lend_product...), so it always matches the sales.
+-- It counts only what's on the rack (perchero): clothes a chica took to
+-- try are in loan_moves until she buys them or gives them back.
 create table products (
   id         bigint generated always as identity primary key,
   name       text not null,
@@ -185,6 +187,7 @@ create table sales (
   qty        int not null check (qty > 0),
   unit_price int not null check (unit_price >= 0),
   method     text not null check (method in ('cash', 'transfer', 'mercado_pago', 'cuenta_dni')),
+  member_id  bigint references members(id),  -- who bought it, for clothes a chica had taken
   sold_on    date not null default (now() at time zone 'America/Argentina/Buenos_Aires')::date,
   created_at timestamptz not null default now(),
   deleted_at timestamptz
@@ -202,6 +205,25 @@ create table shop_moves (
   product_id bigint references products(id),
   qty        int,
   note       text,
+  moved_on   date not null default (now() at time zone 'America/Argentina/Buenos_Aires')::date,
+  created_at timestamptz not null default now(),
+  deleted_at timestamptz
+);
+
+
+-- What each chica took and how it ended:
+--   lent     = she took qty from the rack
+--   returned = she gave qty back to the rack
+--   sold     = she bought qty of what she had (sale_id = that sale)
+-- What she still has = lent − returned − sold. products.stock counts only
+-- what's on the rack, so lending takes it off and returning puts it back.
+create table loan_moves (
+  id         bigint generated always as identity primary key,
+  kind       text not null check (kind in ('lent', 'returned', 'sold')),
+  product_id bigint not null references products(id),
+  member_id  bigint not null references members(id),
+  qty        int not null check (qty > 0),
+  sale_id    bigint references sales(id),
   moved_on   date not null default (now() at time zone 'America/Argentina/Buenos_Aires')::date,
   created_at timestamptz not null default now(),
   deleted_at timestamptz
@@ -313,7 +335,8 @@ begin
   return new_id;
 end $$;
 
--- Undo / remove a sale: marked as removed, and the stock goes back.
+-- Undo / remove a sale: marked as removed, and the stock goes back. If
+-- the sale was of clothes a chica had, they go back to her instead.
 create function undo_sale(p_sale bigint)
 returns void language plpgsql as $$
 declare s record;
@@ -322,7 +345,10 @@ begin
   where id = p_sale and deleted_at is null
   returning product_id, qty into s;
   if found then
-    update products set stock = stock + s.qty where id = s.product_id;
+    update loan_moves set deleted_at = now() where sale_id = p_sale and deleted_at is null;
+    if not found then
+      update products set stock = stock + s.qty where id = s.product_id;
+    end if;
   end if;
 end $$;
 
@@ -369,13 +395,109 @@ returns int language sql stable as $$
                     from shop_moves where deleted_at is null), 0))::int
 $$;
 
+-- How many of a product a chica has right now.
+create function loan_qty(p_product bigint, p_member bigint)
+returns int language sql stable as $$
+  select coalesce(sum(case when kind = 'lent' then qty else -qty end), 0)::int
+  from loan_moves
+  where product_id = p_product and member_id = p_member and deleted_at is null
+$$;
+
+-- Everything that's with a chica now, one row per chica + product.
+-- since = the first day she took it.
+create function open_loans()
+returns table (member_id bigint, member_name text, product_id bigint, product_name text,
+               price int, qty int, since date)
+language sql stable as $$
+  select l.member_id, m.name, l.product_id, p.name, p.price,
+         sum(case when l.kind = 'lent' then l.qty else -l.qty end)::int,
+         min(l.moved_on) filter (where l.kind = 'lent')
+  from loan_moves l
+  join members m on m.id = l.member_id
+  join products p on p.id = l.product_id
+  where l.deleted_at is null
+  group by l.member_id, m.name, l.product_id, p.name, p.price
+  having sum(case when l.kind = 'lent' then l.qty else -l.qty end) > 0
+  order by m.name, p.name
+$$;
+
+-- A chica takes p_qty from the rack. Returns the move id (for Undo).
+create function lend_product(p_product bigint, p_member bigint, p_qty int)
+returns bigint language plpgsql as $$
+declare new_id bigint;
+begin
+  update products set stock = stock - p_qty where id = p_product;
+  if not found then
+    raise exception 'product % not found', p_product;
+  end if;
+  insert into loan_moves (kind, product_id, member_id, qty)
+  values ('lent', p_product, p_member, p_qty)
+  returning id into new_id;
+  return new_id;
+end $$;
+
+-- She gives p_qty back: they go back on the rack. Returns the move id.
+create function return_loan(p_product bigint, p_member bigint, p_qty int)
+returns bigint language plpgsql as $$
+declare new_id bigint;
+begin
+  if p_qty > loan_qty(p_product, p_member) then
+    raise exception 'she only has % of product %', loan_qty(p_product, p_member), p_product;
+  end if;
+  update products set stock = stock + p_qty where id = p_product;
+  insert into loan_moves (kind, product_id, member_id, qty)
+  values ('returned', p_product, p_member, p_qty)
+  returning id into new_id;
+  return new_id;
+end $$;
+
+-- She buys p_qty of what she has, at today's price. The stock doesn't
+-- change (it already left the rack). Returns the sale id (undo with undo_sale).
+create function sell_loan(p_product bigint, p_member bigint, p_qty int, p_method text)
+returns bigint language plpgsql as $$
+declare new_id bigint;
+begin
+  if p_qty > loan_qty(p_product, p_member) then
+    raise exception 'she only has % of product %', loan_qty(p_product, p_member), p_product;
+  end if;
+  insert into sales (product_id, qty, unit_price, method, member_id)
+  select id, p_qty, price, p_method, p_member from products where id = p_product
+  returning id into new_id;
+  insert into loan_moves (kind, product_id, member_id, qty, sale_id)
+  values ('sold', p_product, p_member, p_qty, new_id);
+  return new_id;
+end $$;
+
+-- Undo a "took" or "gave back" (a "bought" is undone with undo_sale).
+create function undo_loan_move(p_move bigint)
+returns void language plpgsql as $$
+declare l record;
+begin
+  update loan_moves set deleted_at = now()
+  where id = p_move and kind in ('lent', 'returned') and deleted_at is null
+  returning kind, product_id, member_id, qty into l;
+  if not found then
+    return;
+  end if;
+  if loan_qty(l.product_id, l.member_id) < 0 then
+    raise exception 'she already bought or returned some of it';
+  end if;
+  update products
+  set stock = stock + case when l.kind = 'lent' then l.qty else -l.qty end
+  where id = l.product_id;
+end $$;
+
 -- Only the logged-in user may run these (Postgres lets everyone by default).
 revoke execute on function price_for(bigint, date), ensure_charges(date),
   record_sale(bigint, int, text), undo_sale(bigint), add_stock(bigint, int),
-  restock(bigint, int, int), undo_restock(bigint), shop_balance() from public, anon;
+  restock(bigint, int, int), undo_restock(bigint), shop_balance(),
+  loan_qty(bigint, bigint), open_loans(), lend_product(bigint, bigint, int),
+  return_loan(bigint, bigint, int), sell_loan(bigint, bigint, int, text), undo_loan_move(bigint) from public, anon;
 grant execute on function price_for(bigint, date), ensure_charges(date),
   record_sale(bigint, int, text), undo_sale(bigint), add_stock(bigint, int),
-  restock(bigint, int, int), undo_restock(bigint), shop_balance() to authenticated;
+  restock(bigint, int, int), undo_restock(bigint), shop_balance(),
+  loan_qty(bigint, bigint), open_loans(), lend_product(bigint, bigint, int),
+  return_loan(bigint, bigint, int), sell_loan(bigint, bigint, int, text), undo_loan_move(bigint) to authenticated;
 
 
 -- ───────────────────────── Security (Row Level Security)
@@ -386,7 +508,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['settings', 'plans', 'plan_prices', 'groups', 'group_slots', 'members',
-    'slot_enrollments', 'enrollments','sessions', 'absences', 'charges', 'payments', 'products', 'sales', 'shop_moves']
+    'slot_enrollments', 'enrollments','sessions', 'absences', 'charges', 'payments', 'products', 'sales', 'shop_moves', 'loan_moves']
   loop
     execute format('alter table %I enable row level security', t);
     execute format('create policy "Logged-in user has full access" on %I
@@ -396,7 +518,7 @@ begin
 end $$;
 
 -- Deleting is only allowed where it can't destroy history. Payments,
--- charges, absences, sessions, sales, shop moves and products have no delete
+-- charges, absences, sessions, sales, shop moves, loan moves and products have no delete
 -- permission at all, so even a bug in the app can't erase them.
 grant delete on plan_prices, group_slots, slot_enrollments, enrollments to authenticated;
 

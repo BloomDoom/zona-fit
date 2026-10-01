@@ -14,6 +14,8 @@ import SlotPicker from '../components/SlotPicker.jsx'
 import MemberPayments from '../components/MemberPayments.jsx'
 import MemberAttendance from '../components/MemberAttendance.jsx'
 import BackButton from '../components/BackButton.jsx'
+import LoanCard from '../components/LoanCard.jsx'
+import { loadOpenLoans, loansByMember } from '../lib/shop.js'
 
 const MEMBER_FIELDS = `*, plans(id, name, times_per_week),
   slot_enrollments(id, slot_id, end_date, group_slots(id, weekday, start_time, group_id, groups(id, name))),
@@ -131,6 +133,7 @@ function ViewMember({ member, onEdit, reload }) {
       )}
 
       <MemberAttendance member={member} />
+      <MemberLoans memberId={member.id} />
 
       {member.notes && (
         <section className="section">
@@ -151,6 +154,20 @@ function ViewMember({ member, onEdit, reload }) {
         {error && <p className="error" role="alert">{error}</p>}
       </section>
     </>
+  )
+}
+
+// The shop's clothes she took to try and hasn't bought or given back.
+// Only a reminder: if it can't load, the rest of her page still works.
+function MemberLoans({ memberId }) {
+  const result = useLoad(() => loadOpenLoans().catch(() => []), [memberId])
+  const mine = loansByMember((result.data ?? []).filter((l) => l.member_id === memberId))[0]
+  if (!mine) return null
+  return (
+    <section className="section">
+      <h2>Prendas de la tienda</h2>
+      <LoanCard member={mine} reload={result.reload} showName={false} />
+    </section>
   )
 }
 

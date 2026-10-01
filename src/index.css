@@ -1748,3 +1748,39 @@ textarea {
   margin: 1rem 0 0.25rem;
   font-size: 1.1rem;
 }
+
+/* ───────── Round 4: clothes with the chicas */
+.loan-card {
+  gap: 0.5rem;
+}
+/* Her name: tap to open her page */
+.loan-name {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 0.75rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.loan-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.loan-items > li + li {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+.loan-item {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 0.25rem;
+}
+.loan-items .btn-row {
+  margin-top: 0.5rem;
+}
+.pay-panel select {
+  margin-bottom: 0.75rem;
+}
