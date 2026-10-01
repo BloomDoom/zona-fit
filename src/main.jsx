@@ -8,8 +8,10 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import '@fontsource-variable/nunito'
 import './index.css'
 import { watchTextSize } from './lib/bigText.js'
+import { watchKeyboard } from './lib/keyboard.js'
 
 watchTextSize()
+watchKeyboard()
 
 // HashRouter keeps the page in the URL after a "#" (…/#/members).
 // GitHub Pages only knows about index.html, so normal URLs like

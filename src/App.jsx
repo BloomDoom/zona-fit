@@ -22,6 +22,7 @@ import Settings from './screens/Settings.jsx'
 import Import from './screens/Import.jsx'
 import Insights from './screens/Insights.jsx'
 import TabBar from './components/TabBar.jsx'
+import ScreenFooter from './components/ScreenFooter.jsx'
 import { ToastProvider } from './components/Toast.jsx'
 
 export default function App() {
@@ -93,6 +94,7 @@ export default function App() {
             <Route path="/settings/import" element={<Import />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          <ScreenFooter />
           <TabBar />
         </ToastProvider>
       )}

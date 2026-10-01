@@ -85,8 +85,7 @@ h1 {
   max-width: 40rem;
   margin: 0 auto;
   padding: 1rem;
-  /* Leave room so the tab bar never covers the last item. */
-  padding-bottom: calc(var(--tab-bar-height) + var(--home-raise) + env(safe-area-inset-bottom) + 1.5rem);
+  /* The room for the tab bar is in .screen-footer, right after it. */
 }
 
 .screen.center {
@@ -966,7 +965,7 @@ h2 {
 
 /* data-big-text is set by src/lib/bigText.js when the text size is large.
    Everything goes into one column and nothing sticks over the content. */
-[data-big-text] .screen {
+[data-big-text] .screen-footer {
   padding-bottom: calc(var(--tab-bar-height) + var(--home-raise) + env(safe-area-inset-bottom) + 4rem);
 }
 /* Titles grow less than body text, or a title alone fills the screen */
@@ -1783,4 +1782,33 @@ textarea {
 }
 .pay-panel select {
   margin-bottom: 0.75rem;
+}
+
+/* ───────── Round 5: end of every screen, typing */
+/* "‹ Volver" / "↑ Arriba", then room so the tab bar never covers the
+   last item (with extra, so it's never a tight fit). */
+.screen-footer {
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem 1rem calc(var(--tab-bar-height) + var(--home-raise) + env(safe-area-inset-bottom) + 3rem);
+  border-top: 1px solid var(--border);
+}
+[data-big-text] .screen-footer {
+  padding-left: min(1rem, 16px);
+  padding-right: min(1rem, 16px);
+}
+[data-big-text] .screen-footer .btn-row {
+  flex-direction: column;
+}
+/* While typing (keyboard open) the tab bar and its room go away, so they
+   can't cover the field or the Save button. See src/lib/keyboard.js. */
+[data-typing] .tab-bar,
+[data-typing] .toast {
+  display: none;
+}
+[data-typing] .screen-footer {
+  padding-bottom: 3rem;
+}
+[data-typing] .save-bar {
+  bottom: 0;
 }
