@@ -3,9 +3,11 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { unwrap, useLoad } from '../lib/useLoad.js'
 import { addMonths, currentMonthISO, formatDate, formatMoney, formatMonth } from '../lib/format.js'
-import { METHODS, STATUS_LABELS, ensureCharges, loadSettings, sortByStatus, totalsByMethod, withStatus } from '../lib/payments.js'
+import { STATUS_LABELS, ensureCharges, loadSettings, sortByStatus, totalsByMethod, withStatus } from '../lib/payments.js'
 import LoadState from '../components/LoadState.jsx'
 import PayPanel from '../components/PayPanel.jsx'
+import MethodBars from '../components/MethodBars.jsx'
+import { normalize } from '../lib/groups.js'
 
 async function loadMonth(month) {
   const settings = await loadSettings()
@@ -32,12 +34,14 @@ export default function Payments() {
 
   const result = useLoad(() => loadMonth(month), [month])
   const [openId, setOpenId] = useState(null) // the charge whose "Cobrar" panel is open
+  const [search, setSearch] = useState('')
 
   const charges = result.data?.charges
   const expected = charges?.reduce((sum, c) => sum + c.amount, 0) ?? 0
   const collected = charges?.reduce((sum, c) => sum + Math.min(c.paid, c.amount), 0) ?? 0
   const owing = charges?.filter((c) => c.status !== 'paid').length ?? 0
   const byMethod = charges ? totalsByMethod(charges) : []
+  const shown = search ? charges?.filter((c) => normalize(c.members.name).includes(normalize(search))) : charges
 
   return (
     <main className="screen">
@@ -79,21 +83,24 @@ export default function Payments() {
                 <div style={{ width: `${expected ? (collected / expected) * 100 : 0}%` }} />
               </div>
               <p>{owing === 0 ? '¡Pagaron todas! 🎉' : owing === 1 ? 'Falta que pague 1 chica' : `Faltan que paguen ${owing} chicas`}</p>
-              {byMethod.length > 0 && (
-                <ul className="method-totals" aria-label="Cobrado por forma de pago">
-                  {byMethod.map(([method, total]) => (
-                    <li key={method}>
-                      <span>{METHODS[method]}</span>
-                      <strong>{formatMoney(total)}</strong>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {byMethod.length > 0 && <MethodBars totals={byMethod} label="Cobrado por forma de pago" />}
             </section>
           )}
 
+          {charges.length > 0 && (
+            <input
+              type="search"
+              className="payments-search"
+              placeholder="Buscar por nombre"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Buscar por nombre"
+            />
+          )}
+          {search && shown.length === 0 && <p className="empty">Nadie con “{search.trim()}” tiene cuota este mes.</p>}
+
           <ul className="card-list">
-            {charges.map((c) => (
+            {shown.map((c) => (
               <li key={c.id} className={`card charge-card status-${c.status}`}>
                 <div className="charge-top">
                   <Link to={`/members/${c.members.id}`} className="charge-name">

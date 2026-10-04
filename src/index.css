@@ -69,6 +69,8 @@ body {
   line-height: 1.45;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  /* A screen sliding in (swipe between tabs) must not make the page scroll sideways. */
+  overflow-x: clip;
   /* Keep content out from under the Dynamic Island / status bar. */
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
@@ -1811,4 +1813,62 @@ textarea {
 }
 [data-typing] .save-bar {
   bottom: 0;
+}
+
+/* ───────── Swiping between tabs (src/lib/useTabSwipe.js): the new
+   screen slides in a little from the side the thumb came from. */
+@keyframes slide-from-right {
+  from { transform: translateX(2.5rem); opacity: 0.4; }
+}
+@keyframes slide-from-left {
+  from { transform: translateX(-2.5rem); opacity: 0.4; }
+}
+[data-swipe='left'] main.screen {
+  animation: slide-from-right 0.2s ease-out;
+}
+[data-swipe='right'] main.screen {
+  animation: slide-from-left 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-swipe] main.screen {
+    animation: none;
+  }
+}
+
+/* ───────── "Cómo pagaron": one bar per payment method, longest = most
+   money. One color only, the name and numbers say which is which. */
+.method-bars {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid var(--border);
+}
+.method-bars li {
+  padding: 0.25rem 0;
+}
+.method-bars-label {
+  display: flex;
+  flex-wrap: wrap; /* big text: the amount drops under the name */
+  gap: 0 0.6rem;
+  align-items: baseline;
+}
+.method-bars-label span:first-child {
+  flex: 1;
+}
+.method-bars-track {
+  height: 10px;
+  margin-top: 0.2rem;
+  background: var(--track);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.method-bars-track div {
+  height: 100%;
+  min-width: 4px;
+  background: var(--primary);
+  border-radius: 999px;
+}
+
+.payments-search {
+  margin-bottom: 0.5rem;
 }

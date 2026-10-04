@@ -16,7 +16,7 @@ const icons = {
 
 // Inicio sits in the middle as a raised round button (like a floating
 // action button), with two normal tabs on each side.
-const tabs = [
+export const tabs = [
   { to: '/payments', label: 'Pagos', icon: 'payments' },
   { to: '/members', label: 'Chicas', icon: 'members' },
   { to: '/', label: 'Inicio', home: true },

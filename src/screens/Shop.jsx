@@ -11,6 +11,7 @@ import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from '../components/Toast.jsx'
 import LoadState from '../components/LoadState.jsx'
 import LoanCard from '../components/LoanCard.jsx'
+import MethodBars from '../components/MethodBars.jsx'
 
 async function loadShop() {
   const today = todayISO()
@@ -286,14 +287,7 @@ function TodaySales({ sales, members, reload }) {
       <p className="big-number">
         {formatMoney(total)} <span className="muted">vendido hoy</span>
       </p>
-      <ul className="method-totals" aria-label="Vendido hoy por forma de pago">
-        {byMethod.map(([method, amount]) => (
-          <li key={method}>
-            <span>{METHODS[method]}</span>
-            <strong>{formatMoney(amount)}</strong>
-          </li>
-        ))}
-      </ul>
+      <MethodBars totals={byMethod} label="Vendido hoy por forma de pago" />
       <details>
         <summary>Ver las ventas de hoy ({plural(sales.length, 'venta', 'ventas')})</summary>
         <ul className="payment-lines">
