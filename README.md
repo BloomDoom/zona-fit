@@ -15,6 +15,7 @@ index.html                  iPhone/PWA meta tags
 vite.config.js              build settings + PWA manifest and service worker
 supabase/
   schema.sql                all tables, functions and security rules (run once)
+  migrations/               dated changes for a database made with an older schema.sql
   reset-test-data.sql       ⚠️ erases all data (only before loading real data)
 src/
   main.jsx                  starts React, the router and the crash screen
@@ -22,20 +23,37 @@ src/
   index.css                 all styles (colors/sizes at the top)
   lib/
     sessions.js             which classes happen on which day (the core logic)
+    roster.js               who is on a class's list (signed-up times + whole-class leftovers)
     payments.js             fee statuses: pagada / parcial / sin pagar / vencida
-    shop.js                 products, sales, stock
+    shop.js                 products, sales, stock, wallet moves, clothes lent
     members.js              age, birthdays
     attendance.js           attendance % per member and class
+    groups.js               slot labels, turnos, normalize() for search
     bigText.js              detects a large iPhone text size (data-big-text)
+    keyboard.js             data-typing while the keyboard is open (hides the tab bar)
+    useTabSwipe.js          swipe sideways between tabs
     format.js               dates, months, money (Argentine format, Spanish names)
     useLoad.js              loading data in a screen (+ unwrap)
     backup.js, csv.js       CSV export and import
-    phone.js, groups.js, errors.js, supabase.js, useOnline.js, vcard.js, asset.js
-  components/               reusable pieces (tab bar, toast, pay panel, ...)
+    phone.js, vcard.js      WhatsApp links, contact cards
+    asset.js                path to files in public/ (works under /<repo>/)
+    errors.js, supabase.js, useOnline.js
+  components/               reusable pieces (see "Screens" below)
   screens/                  one file per screen
 public/                     icons (copied as-is)
+img/                        logo photos the icons were cut from (not used by the app)
 .github/workflows/          deploy to GitHub Pages + keep Supabase awake
 ```
+
+### Screens (routes in `src/App.jsx`)
+| Area | Screens | Main components |
+|---|---|---|
+| Hoy | `Today` (`/`), `ClassDetail`, `ClassNew` | `Birthdays`, `SlotFields` |
+| Clases | `Groups`, `GroupNew`, `GroupDetail`, `GroupMessage` | `SlotFields` |
+| Socios | `Members`, `MemberNew`, `MemberDetail` | `MemberFields`, `SlotPicker`, `AutoFillTimes`, `MemberPayments`, `MemberAttendance`, `LoanCard` |
+| Pagos | `Payments`, `Plans` | `PayPanel`, `MethodBars` |
+| Tienda | `Shop`, `ProductEdit`, `Wallet` | `LoanCard`, `MethodBars` |
+| Other | `Insights`, `Settings`, `Import`, `Login` | `TabBar`, `Toast`, `LoadState`, `ScreenFooter`, `BackButton`, `ErrorBoundary` |
 
 **Words:** in the code a class is a `group` (the table is `groups`), one class
 on one day is a `session`, and a socio is a `member`.
@@ -67,8 +85,15 @@ plan change only updates fees with no payments and no hand edit, and plan
 changes never touch past months.
 
 **How the shop works:** `products.stock` is only changed by the database
-functions `record_sale`, `undo_sale` and `add_stock`, which change the sale
-and the stock together. Each sale keeps the price it was sold at.
+functions `record_sale`, `undo_sale`, `restock`, `undo_restock` and `add_stock`,
+which change the sale or purchase and the stock together. Each sale keeps the
+price it was sold at. Each product has its own `min_stock` (warning on Inicio
+and a dot on the Tienda tab).
+
+**Shop wallet (Billetera):** the shop's money is kept apart from the fees.
+`shop_moves` holds what isn't a sale: purchase (stock that arrived), withdrawal
+(money taken out) and deposit (money put in). Balance = sales + deposits −
+purchases − withdrawals.
 
 ## One-time setup
 
@@ -76,6 +101,9 @@ and the stock together. Each sale keeps the price it was sold at.
 1. Create a free project at [supabase.com](https://supabase.com). Pick the
    São Paulo region (closest to Argentina).
 2. **SQL Editor → New query**: paste all of `supabase/schema.sql` and press **Run**.
+   (`schema.sql` is always complete. The files in `supabase/migrations/` are only
+   for a database created with an older `schema.sql`: run the missing ones in
+   date order.)
 3. **Authentication → Sign In / Providers**: turn **off** "Allow new users to sign up".
 4. **Authentication → Users → Add user → Create new user**: Nadia's email and a
    password, with "Auto Confirm User" ticked.
@@ -142,3 +170,24 @@ exist are skipped, so importing the same file twice is safe.
   Inicio button, white on transparent) were cut from a photo of the logo. If a
   cleaner logo file turns up, replace them with the same names and sizes. The
   colors (black and purple) are at the top of `src/index.css`.
+
+## Sister project: Ms Dany's Place (`../mama`)
+This app was built from Ms Dany's Place (English school admin). Same stack,
+same folders, same ideas (sessions calculated from `group_slots`,
+`ensure_charges`, soft deletes, CSV import/backup). Before building something
+here, check whether it already exists there. Same idea, different words:
+
+| Here | Ms Dany's Place |
+|---|---|
+| `members` (socios), `Member*` screens | `students`, `Student*` screens |
+| a `plan` per member with price history (`plan_prices`) | one school fee + siblings + scholarships (`fees.js`) |
+| member signed up to weekly times (`slot_enrollments`, `roster.js`) | student enrolled in a whole group (`enrollments`) |
+| `schema.sql` always complete + dated files in `supabase/migrations/` | numbered SQL files `02…08` |
+| UI in Spanish | UI in English |
+
+**Shared files** (state on 2026-10-11):
+- **Identical:** `lib/bigText, csv, keyboard, phone, supabase, useLoad, useOnline, useTabSwipe`, both workflows.
+- **Small differences:** `lib/errors, format, vcard`; components `BackButton, Birthdays, ErrorBoundary, LoadState, PayPanel, ScreenFooter, SlotFields, Toast`; `Login`.
+- **Very different:** `lib/sessions, payments, attendance, groups, backup`; screens `Today, ClassDetail, ClassNew, Groups, GroupNew, GroupDetail, GroupMessage, Import, Insights, Payments, Settings`; `schema.sql`.
+- **Only here:** shop + wallet + clothes lent to members, plans, per-time sign-up (`SlotPicker`, `AutoFillTimes`), `MethodBars`, `lib/asset.js`.
+- **Only in Ms Dany's Place:** make-ups, exams, rewards, school fee/siblings/scholarships, private classes, `BroadcastMessage`, `EmptyState`, `Doodle`.
