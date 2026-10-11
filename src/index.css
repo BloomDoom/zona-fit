@@ -1869,6 +1869,7 @@ textarea {
   border-radius: 999px;
 }
 
+/* Inside the total box, under "Faltan que paguen…" */
 .payments-search {
-  margin-bottom: 0.5rem;
+  margin: 0.75rem 0 0.25rem;
 }

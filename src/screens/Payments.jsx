@@ -27,10 +27,11 @@ export default function Payments() {
   // Month in the URL (/payments?month=2026-09-01), like the day on Inicio.
   const [params, setParams] = useSearchParams()
   const thisMonth = currentMonthISO()
-  const month = params.get('month') || thisMonth
+  // No future months: nobody pays ahead, and seeing them was confusing.
+  const asked = params.get('month')
+  const month = asked && asked < thisMonth ? asked : thisMonth
   const goTo = (m) => setParams(m === thisMonth ? {} : { month: m }, { replace: true })
-  // Next month is allowed, for people who pay in advance.
-  const canGoForward = month < addMonths(thisMonth, 1)
+  const canGoForward = month < thisMonth
 
   const result = useLoad(() => loadMonth(month), [month])
   const [openId, setOpenId] = useState(null) // the charge whose "Cobrar" panel is open
@@ -83,20 +84,19 @@ export default function Payments() {
                 <div style={{ width: `${expected ? (collected / expected) * 100 : 0}%` }} />
               </div>
               <p>{owing === 0 ? '¡Pagaron todas! 🎉' : owing === 1 ? 'Falta que pague 1 chica' : `Faltan que paguen ${owing} chicas`}</p>
+              {/* Right under the total, so she doesn't have to scroll to find a chica */}
+              <input
+                type="search"
+                className="payments-search"
+                placeholder="Buscar chica por nombre"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                aria-label="Buscar chica por nombre"
+              />
               {byMethod.length > 0 && <MethodBars totals={byMethod} label="Cobrado por forma de pago" />}
             </section>
           )}
 
-          {charges.length > 0 && (
-            <input
-              type="search"
-              className="payments-search"
-              placeholder="Buscar por nombre"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              aria-label="Buscar por nombre"
-            />
-          )}
           {search && shown.length === 0 && <p className="empty">Nadie con “{search.trim()}” tiene cuota este mes.</p>}
 
           <ul className="card-list">
