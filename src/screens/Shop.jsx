@@ -24,10 +24,10 @@ async function loadShop() {
 
 // The products are in four sections that start closed, so the screen
 // stays short (each opens with "Ver"):
-//   Prendas con las chicas: who has what
+//   Lo que tienen las chicas: clothes to try and consumables not paid yet
 //   Perchero:    clothes hanging on the rack (some may also be with a chica)
 //   Consumibles: agua, granola…
-//   Sin stock:   nothing on the rack and nothing with the chicas
+//   Sin stock:   nothing left (see stockLeft)
 // Clothes that are all with chicas show only in the first one: they're
 // still stock until she buys them, but they're not on the rack.
 export default function Shop() {
@@ -91,8 +91,8 @@ export default function Shop() {
             <p className="empty">Todavía no hay productos. Tocá “+ Producto” para cargar lo que vendés (agua, barritas, remeras…).</p>
           ) : (
             <div className="shop-sections">
-              <ShopSection title="Prendas con las chicas" count={plural(withChicas.length, 'chica', 'chicas')}
-                empty={withChicas.length === 0 && 'nadie tiene prendas'}>
+              <ShopSection title="Lo que tienen las chicas" count={plural(withChicas.length, 'chica', 'chicas')}
+                empty={withChicas.length === 0 && 'nada'}>
                 <ul className="card-list">
                   {withChicas.map((m) => (
                     <li key={m.member_id}>
@@ -164,8 +164,8 @@ function StockChip({ product: p }) {
   return <span className="chip chip-paid">{p.stock} {isConsumable(p) ? 'en stock' : 'en el perchero'}</span>
 }
 
-// p.lent = how many are with the chicas (not on the rack). Consumables
-// can't be lent.
+// p.lent = how many are with the chicas (not on the rack): clothes to try,
+// or consumables they took without paying.
 function ProductCard({ product: p, members, panel, onOpen, onClose, reload }) {
   const done = () => { onClose(); reload() }
   const lent = p.lent
@@ -176,7 +176,7 @@ function ProductCard({ product: p, members, panel, onOpen, onClose, reload }) {
         <span className="charge-name">
           <span className="card-title">{p.name}</span>
           <span>{formatMoney(p.price)}</span>
-          {lent > 0 && <span className="muted">{lent} con chicas</span>}
+          {lent > 0 && <span className="muted">{lent} {isConsumable(p) ? 'sin pagar' : 'con chicas'}</span>}
         </span>
         <span className="charge-right">
           <StockChip product={p} />
@@ -188,7 +188,9 @@ function ProductCard({ product: p, members, panel, onOpen, onClose, reload }) {
       {!panel && (
         <div className="btn-row">
           <button className="btn-primary" onClick={() => onOpen('sell')}>Vender</button>
-          {!isConsumable(p) && <button className="btn-secondary" onClick={() => onOpen('lend')}>Se lo lleva…</button>}
+          <button className="btn-secondary" onClick={() => onOpen('lend')}>
+            {isConsumable(p) ? 'Se lo lleva sin pagar…' : 'Se lo lleva…'}
+          </button>
         </div>
       )}
     </div>
@@ -249,8 +251,9 @@ function SellPanel({ product, onDone, onCancel }) {
   )
 }
 
-// A chica takes it to try: who and how many. It leaves the stock until she
-// buys it or gives it back (on "Prendas con las chicas").
+// A chica takes it to try (clothes) or takes it and pays later
+// (consumables): who and how many. It leaves the rack until she buys it or
+// gives it back, on "Lo que tienen las chicas".
 function LendPanel({ product, members, onDone, onCancel }) {
   const showToast = useToast()
   const [memberId, setMemberId] = useState('')
@@ -266,7 +269,7 @@ function LendPanel({ product, members, onDone, onCancel }) {
     try {
       const moveId = await lendProduct(product.id, Number(memberId), qty)
       onDone()
-      showToast(`${name} se llevó ${qty} × ${product.name}`, async () => {
+      showToast(`${name} se llevó ${qty} × ${product.name}${isConsumable(product) ? ' sin pagar' : ''}`, async () => {
         try {
           await undoLoanMove(moveId)
           onDone()
@@ -299,7 +302,9 @@ function LendPanel({ product, members, onDone, onCancel }) {
       {qty > product.stock && (
         <p className="muted">Según la app quedan {product.stock}. Se guarda igual; después corregí el stock si hace falta.</p>
       )}
-      <button className="btn-primary" onClick={lend} disabled={busy}>Se lo lleva a probar</button>
+      <button className="btn-primary" onClick={lend} disabled={busy}>
+        {isConsumable(product) ? 'Se lo lleva sin pagar' : 'Se lo lleva a probar'}
+      </button>
       {error && <p className="error" role="alert">{error}</p>}
       <button className="btn-text btn-cancel" onClick={onCancel}>Cancelar</button>
     </div>

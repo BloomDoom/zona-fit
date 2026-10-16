@@ -9,14 +9,17 @@
 import { supabase } from './supabase.js'
 import { unwrap } from './useLoad.js'
 
-// What's left of a product: on the rack + with the chicas. Clothes a chica
-// took are still stock until she buys them. (p.lent comes from withLent.)
-export const stockLeft = (p) => p.stock + (p.lent || 0)
+// Consumables (agua, granola) aren't lent: a chica takes one and pays
+// later ("sin pagar"). Works for products and for open_loans rows.
+export const isConsumable = (p) => p.kind === 'consumable'
+
+// What's left of a product: on the rack + the clothes with the chicas,
+// which are still stock until she buys them. A consumable she took is
+// gone (she drinks it), so it doesn't count. (p.lent comes from withLent.)
+export const stockLeft = (p) => p.stock + (isConsumable(p) ? 0 : p.lent || 0)
 
 // Each product has its own minimum (min_stock, "avisar cuando queden").
 export const isLow = (p) => stockLeft(p) <= p.min_stock
-
-export const isConsumable = (p) => p.kind === 'consumable'
 
 // Products as they come, plus p.lent: how many are with the chicas.
 export function withLent(products, loans) {
@@ -32,7 +35,7 @@ export function loadProducts() {
 // (For the warning on Inicio and the dot on the Tienda tab.)
 export async function loadLowStock() {
   const [products, loans] = await Promise.all([
-    unwrap(supabase.from('products').select('id, name, stock, min_stock').eq('active', true)),
+    unwrap(supabase.from('products').select('id, name, stock, min_stock, kind').eq('active', true)),
     loadOpenLoans().catch(() => []),
   ])
   return withLent(products, loans).filter(isLow).sort((a, b) => stockLeft(a) - stockLeft(b))

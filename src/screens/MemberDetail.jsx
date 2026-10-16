@@ -157,15 +157,16 @@ function ViewMember({ member, onEdit, reload }) {
   )
 }
 
-// The shop's clothes she took to try and hasn't bought or given back.
-// Only a reminder: if it can't load, the rest of her page still works.
+// What she has from the shop: clothes she took to try and hasn't bought or
+// given back, and consumables she hasn't paid yet. Only a reminder: if it
+// can't load, the rest of her page still works.
 function MemberLoans({ memberId }) {
   const result = useLoad(() => loadOpenLoans().catch(() => []), [memberId])
   const mine = loansByMember((result.data ?? []).filter((l) => l.member_id === memberId))[0]
   if (!mine) return null
   return (
     <section className="section">
-      <h2>Prendas de la tienda</h2>
+      <h2>De la tienda</h2>
       <LoanCard member={mine} reload={result.reload} showName={false} />
     </section>
   )

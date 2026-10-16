@@ -91,9 +91,11 @@ price it was sold at. Each product has its own `min_stock` (warning on Inicio
 and a dot on the Tienda tab). What's left of a product counts the rack plus
 what the chicas have (`stockLeft`): clothes with a chica are still stock
 until she buys them. Each product is `kind` clothes or consumable (agua,
-granola: they can't be lent). Tienda groups the products in four sections
-that start closed ("Ver"): Prendas con las chicas, Perchero (clothes on the
-rack), Consumibles and Sin stock (nothing on the rack or with the chicas).
+granola). A chica can take a consumable and pay later ("Se lo lleva sin
+pagar": saved in `loan_moves` like clothes, with only "Pagó"); it stops
+counting as stock as soon as she takes it. Tienda groups the products in
+four sections that start closed ("Ver"): Lo que tienen las chicas, Perchero
+(clothes on the rack), Consumibles and Sin stock (nothing left).
 
 **Shop wallet (Billetera):** the shop's money is kept apart from the fees.
 `shop_moves` holds what isn't a sale: purchase (stock that arrived), withdrawal

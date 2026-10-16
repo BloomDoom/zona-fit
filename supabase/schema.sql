@@ -406,19 +406,21 @@ returns int language sql stable as $$
 $$;
 
 -- Everything that's with a chica now, one row per chica + product.
--- since = the first day she took it.
+-- since = the first day she took it. kind = clothes (to try) or
+-- consumable (she took it and hasn't paid yet).
 create function open_loans()
 returns table (member_id bigint, member_name text, product_id bigint, product_name text,
-               price int, qty int, since date)
+               price int, qty int, since date, kind text)
 language sql stable as $$
   select l.member_id, m.name, l.product_id, p.name, p.price,
          sum(case when l.kind = 'lent' then l.qty else -l.qty end)::int,
-         min(l.moved_on) filter (where l.kind = 'lent')
+         min(l.moved_on) filter (where l.kind = 'lent'),
+         p.kind
   from loan_moves l
   join members m on m.id = l.member_id
   join products p on p.id = l.product_id
   where l.deleted_at is null
-  group by l.member_id, m.name, l.product_id, p.name, p.price
+  group by l.member_id, m.name, l.product_id, p.name, p.price, p.kind
   having sum(case when l.kind = 'lent' then l.qty else -l.qty end) > 0
   order by m.name, p.name
 $$;

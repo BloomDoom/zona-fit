@@ -2,23 +2,33 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { formatDate, formatMoney } from '../lib/format.js'
 import { METHODS } from '../lib/payments.js'
-import { returnLoan, sellLoan, undoLoanMove, undoSale } from '../lib/shop.js'
+import { isConsumable, returnLoan, sellLoan, undoLoanMove, undoSale } from '../lib/shop.js'
 import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from './Toast.jsx'
 
-// One chica and the clothes she has from the shop. Each item can be
-// "Compró" (she pays, like Vender) or "Devolvió" (back on the rack).
+// "2 prendas · debe $ 2.000"
+function summary(items) {
+  const clothes = items.filter((i) => !isConsumable(i)).reduce((sum, i) => sum + i.qty, 0)
+  const owed = items.filter(isConsumable).reduce((sum, i) => sum + i.qty * i.price, 0)
+  return [
+    clothes > 0 && (clothes === 1 ? '1 prenda' : `${clothes} prendas`),
+    owed > 0 && `debe ${formatMoney(owed)}`,
+  ].filter(Boolean).join(' · ')
+}
+
+// One chica and what she has from the shop. Clothes she took to try can be
+// "Compró" (she pays, like Vender) or "Devolvió" (back on the rack). A
+// consumable she took without paying only has "Pagó".
 // showName: false on her own page, where the name is already the title.
 export default function LoanCard({ member, reload, showName = true }) {
   const [open, setOpen] = useState(null) // { productId, action: 'buy' | 'return' }
-  const total = member.items.reduce((sum, item) => sum + item.qty, 0)
 
   return (
     <div className="card loan-card">
       {showName && (
         <Link to={`/members/${member.member_id}`} className="loan-name">
           <span className="card-title">{member.member_name}</span>
-          <span className="muted">{total === 1 ? '1 prenda' : `${total} prendas`}</span>
+          <span className="muted">{summary(member.items)}</span>
         </Link>
       )}
       <ul className="loan-items">
@@ -27,7 +37,7 @@ export default function LoanCard({ member, reload, showName = true }) {
             <p className="loan-item">
               <strong>{item.qty} × {item.product_name}</strong>
               <span className="muted">
-                {formatMoney(item.price)} c/u · desde el {formatDate(item.since)}
+                {formatMoney(item.price)} c/u · {isConsumable(item) && 'sin pagar '}desde el {formatDate(item.since)}
               </span>
             </p>
             {open?.productId === item.product_id ? (
@@ -37,6 +47,8 @@ export default function LoanCard({ member, reload, showName = true }) {
                 onDone={() => { setOpen(null); reload() }}
                 onCancel={() => setOpen(null)}
               />
+            ) : isConsumable(item) ? (
+              <button className="btn-primary" onClick={() => setOpen({ productId: item.product_id, action: 'buy' })}>Pagó</button>
             ) : (
               <div className="btn-row">
                 <button className="btn-primary" onClick={() => setOpen({ productId: item.product_id, action: 'buy' })}>Compró</button>
@@ -65,7 +77,7 @@ function LoanPanel({ item, action, onDone, onCancel }) {
       if (action === 'buy') {
         const saleId = await sellLoan(item.product_id, item.member_id, qty, method)
         onDone()
-        showToast(`${who} compró ${qty} × ${item.product_name}`, () => undo(() => undoSale(saleId)))
+        showToast(`${who} ${isConsumable(item) ? 'pagó' : 'compró'} ${qty} × ${item.product_name}`, () => undo(() => undoSale(saleId)))
       } else {
         const moveId = await returnLoan(item.product_id, item.member_id, qty)
         onDone()
