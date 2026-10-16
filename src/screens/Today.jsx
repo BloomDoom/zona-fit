@@ -7,7 +7,7 @@ import { loadSessions, sessionPath, updateSession } from '../lib/sessions.js'
 import { loadSignups, rosterFor } from '../lib/roster.js'
 import { birthdaysBetween } from '../lib/members.js'
 import { loadSettings } from '../lib/payments.js'
-import { loadLowStock } from '../lib/shop.js'
+import { loadLowStock, stockLeft } from '../lib/shop.js'
 import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from '../components/Toast.jsx'
 import LoadState from '../components/LoadState.jsx'
@@ -79,7 +79,7 @@ export default function Today() {
       {result.data?.lowStock.length > 0 && (
         <Link to="/shop" className="stock-warning">
           <strong>Poco stock en la tienda:</strong>{' '}
-          {result.data.lowStock.map((p) => `${p.name} (${p.stock})`).join(', ')} ›
+          {result.data.lowStock.map((p) => `${p.name} (${stockLeft(p)})`).join(', ')} ›
         </Link>
       )}
 

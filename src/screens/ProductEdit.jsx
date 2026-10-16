@@ -38,6 +38,7 @@ function NewProduct() {
   const [price, setPrice] = useState('')
   const [stock, setStock] = useState('')
   const [minStock, setMinStock] = useState('3')
+  const [kind, setKind] = useState('clothes')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
 
@@ -53,7 +54,7 @@ function NewProduct() {
       await unwrap(
         supabase
           .from('products')
-          .insert({ name: name.trim(), price: amount, stock: Number(stock) || 0, min_stock: Number(minStock) || 0 }),
+          .insert({ name: name.trim(), price: amount, stock: Number(stock) || 0, min_stock: Number(minStock) || 0, kind }),
       )
       showToast(`${name.trim()} agregado`)
       navigate('/shop', { replace: true })
@@ -71,6 +72,7 @@ function NewProduct() {
           Nombre
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="ej. Agua 500 ml" required />
         </label>
+        <KindField value={kind} onChange={setKind} />
         <label>
           Precio
           <input inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="ej. 1500" required />
@@ -84,6 +86,20 @@ function NewProduct() {
         <button className="btn-primary" disabled={busy}>{busy ? 'Guardando…' : 'Agregar producto'}</button>
       </form>
     </>
+  )
+}
+
+// Clothes go in Perchero on the Tienda screen and can be lent to a chica;
+// consumables go in Consumibles.
+function KindField({ value, onChange }) {
+  return (
+    <label>
+      ¿Qué es?
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="clothes">Prenda (va al perchero)</option>
+        <option value="consumable">Consumible (agua, granola…)</option>
+      </select>
+    </label>
   )
 }
 
@@ -103,6 +119,7 @@ function EditProduct({ product, reload }) {
   const [name, setName] = useState(product.name)
   const [price, setPrice] = useState(String(product.price))
   const [minStock, setMinStock] = useState(String(product.min_stock))
+  const [kind, setKind] = useState(product.kind || 'clothes')
   const [error, setError] = useState('')
 
   async function run(action, message, onUndo) {
@@ -123,7 +140,7 @@ function EditProduct({ product, reload }) {
     const amount = parseAmount(price)
     if (amount === null) return setError('Escribí el precio, por ejemplo 1500.')
     // Past sales keep the price they were sold at (saved on each sale).
-    const changes = { name: name.trim(), price: amount, min_stock: Number(minStock) || 0 }
+    const changes = { name: name.trim(), price: amount, min_stock: Number(minStock) || 0, kind }
     run(() => unwrap(supabase.from('products').update(changes).eq('id', product.id)), 'Guardado')
   }
 
@@ -158,6 +175,7 @@ function EditProduct({ product, reload }) {
             Nombre
             <input value={name} onChange={(e) => setName(e.target.value)} required />
           </label>
+          <KindField value={kind} onChange={setKind} />
           <label>
             Precio
             <input inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} required />

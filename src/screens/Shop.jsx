@@ -4,8 +4,8 @@ import { useLoad } from '../lib/useLoad.js'
 import { formatMoney, plural, todayISO } from '../lib/format.js'
 import { METHODS, sumByMethod } from '../lib/payments.js'
 import {
-  isLow, lendProduct, lentByProduct, loadActiveMembers, loadBalance, loadOpenLoans, loadProducts, loadSales, loansByMember,
-  recordSale, saleTotal, sortByStock, undoLoanMove, undoSale,
+  isConsumable, isLow, lendProduct, loadActiveMembers, loadBalance, loadOpenLoans, loadProducts, loadSales, loansByMember,
+  recordSale, saleTotal, sortByStock, stockLeft, undoLoanMove, undoSale, withLent,
 } from '../lib/shop.js'
 import { saveErrorMessage } from '../lib/errors.js'
 import { useToast } from '../components/Toast.jsx'
@@ -22,15 +22,44 @@ async function loadShop() {
   return { products, sales, balance, loans, members }
 }
 
+// The products are in four sections that start closed, so the screen
+// stays short (each opens with "Ver"):
+//   Prendas con las chicas: who has what
+//   Perchero:    clothes hanging on the rack (some may also be with a chica)
+//   Consumibles: agua, granola…
+//   Sin stock:   nothing on the rack and nothing with the chicas
+// Clothes that are all with chicas show only in the first one: they're
+// still stock until she buys them, but they're not on the rack.
 export default function Shop() {
   const result = useLoad(loadShop, [])
   const [open, setOpen] = useState(null) // { id, panel: 'sell' | 'lend' }: the product whose panel is open
-  const products = result.data?.products
+  const loans = result.data?.loans ?? []
+  const products = result.data && withLent(result.data.products, loans)
   const active = sortByStock(products?.filter((p) => p.active) ?? [])
   const inactive = products?.filter((p) => !p.active) ?? []
   const low = active.filter(isLow)
-  const loans = result.data?.loans ?? []
-  const lent = lentByProduct(loans)
+  const withStock = active.filter((p) => stockLeft(p) > 0)
+  const rack = withStock.filter((p) => !isConsumable(p) && p.stock > 0)
+  const consumables = withStock.filter(isConsumable)
+  const outOfStock = active.filter((p) => stockLeft(p) <= 0)
+  const withChicas = loansByMember(loans)
+
+  const productList = (list) => (
+    <ul className="card-list">
+      {list.map((p) => (
+        <li key={p.id}>
+          <ProductCard
+            product={p}
+            members={result.data.members}
+            panel={open?.id === p.id ? open.panel : null}
+            onOpen={(panel) => setOpen({ id: p.id, panel })}
+            onClose={() => setOpen(null)}
+            reload={result.reload}
+          />
+        </li>
+      ))}
+    </ul>
+  )
 
   return (
     <main className="screen">
@@ -52,43 +81,39 @@ export default function Shop() {
 
           {low.length > 0 && (
             <p className="stock-warning" role="status">
-              <strong>Poco stock:</strong> {low.map((p) => `${p.name} (${p.stock})`).join(', ')}
+              <strong>Poco stock:</strong> {low.map((p) => `${p.name} (${stockLeft(p)})`).join(', ')}
             </p>
           )}
 
           <TodaySales sales={result.data.sales} members={result.data.members} reload={result.reload} />
 
-          {loans.length > 0 && (
-            <section className="section">
-              <h2>Prendas con las chicas</h2>
-              <ul className="card-list">
-                {loansByMember(loans).map((m) => (
-                  <li key={m.member_id}>
-                    <LoanCard member={m} reload={result.reload} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
           {active.length === 0 ? (
             <p className="empty">Todavía no hay productos. Tocá “+ Producto” para cargar lo que vendés (agua, barritas, remeras…).</p>
           ) : (
-            <ul className="card-list">
-              {active.map((p) => (
-                <li key={p.id}>
-                  <ProductCard
-                    product={p}
-                    lent={lent[p.id] || 0}
-                    members={result.data.members}
-                    panel={open?.id === p.id ? open.panel : null}
-                    onOpen={(panel) => setOpen({ id: p.id, panel })}
-                    onClose={() => setOpen(null)}
-                    reload={result.reload}
-                  />
-                </li>
-              ))}
-            </ul>
+            <div className="shop-sections">
+              <ShopSection title="Prendas con las chicas" count={plural(withChicas.length, 'chica', 'chicas')}
+                empty={withChicas.length === 0 && 'nadie tiene prendas'}>
+                <ul className="card-list">
+                  {withChicas.map((m) => (
+                    <li key={m.member_id}>
+                      <LoanCard member={m} reload={result.reload} />
+                    </li>
+                  ))}
+                </ul>
+              </ShopSection>
+              <ShopSection title="Perchero" count={plural(rack.length, 'prenda', 'prendas')}
+                empty={rack.length === 0 && 'vacío'}>
+                {productList(rack)}
+              </ShopSection>
+              <ShopSection title="Consumibles" count={plural(consumables.length, 'producto', 'productos')}
+                empty={consumables.length === 0 && 'ninguno con stock'}>
+                {productList(consumables)}
+              </ShopSection>
+              <ShopSection title="Sin stock" count={plural(outOfStock.length, 'producto', 'productos')}
+                empty={outOfStock.length === 0 && 'ninguno'} warn={outOfStock.length > 0}>
+                {productList(outOfStock)}
+              </ShopSection>
+            </div>
           )}
 
           {inactive.length > 0 && (
@@ -109,18 +134,43 @@ export default function Shop() {
   )
 }
 
-// "Sin stock" / "Quedan 2" / "12 en stock"
-function StockChip({ product }) {
-  if (product.stock <= 0) return <span className="chip chip-overdue">Sin stock</span>
-  if (isLow(product)) return <span className="chip chip-partial">Quedan {product.stock}</span>
-  return <span className="chip chip-paid">{product.stock} en stock</span>
+// One closed section: "Perchero · 10 prendas ········ Ver". The whole row
+// opens it. With nothing inside it only says so (e.g. "Sin stock · ninguno").
+function ShopSection({ title, count, empty, warn, children }) {
+  const [open, setOpen] = useState(false)
+  if (empty) {
+    return (
+      <div className="shop-section-row">
+        <span><strong>{title}</strong> <span className="muted">· {empty}</span></span>
+      </div>
+    )
+  }
+  return (
+    <section>
+      <button className={`shop-section-row ${warn ? 'warn' : ''}`} onClick={() => setOpen(!open)} aria-expanded={open}>
+        <span><strong>{title}</strong> <span className="muted">· {count}</span></span>
+        <span className="shop-section-see">{open ? 'Ocultar' : 'Ver'}</span>
+      </button>
+      {open && children}
+    </section>
+  )
 }
 
-// lent = how many are with the chicas (not counted in the stock).
-function ProductCard({ product: p, lent, members, panel, onOpen, onClose, reload }) {
+// "Sin stock" / "Quedan 2" / "12 en el perchero". Clothes with the chicas
+// count as stock (see stockLeft).
+function StockChip({ product: p }) {
+  if (stockLeft(p) <= 0) return <span className="chip chip-overdue">Sin stock</span>
+  if (isLow(p)) return <span className="chip chip-partial">Quedan {stockLeft(p)}</span>
+  return <span className="chip chip-paid">{p.stock} {isConsumable(p) ? 'en stock' : 'en el perchero'}</span>
+}
+
+// p.lent = how many are with the chicas (not on the rack). Consumables
+// can't be lent.
+function ProductCard({ product: p, members, panel, onOpen, onClose, reload }) {
   const done = () => { onClose(); reload() }
+  const lent = p.lent
   return (
-    <div className={`card product-card ${p.stock <= 0 ? 'out-of-stock' : ''}`}>
+    <div className={`card product-card ${stockLeft(p) <= 0 ? 'out-of-stock' : ''}`}>
       {/* The whole top (name, price, stock) opens the product to edit it */}
       <Link to={`/shop/${p.id}`} className="product-top">
         <span className="charge-name">
@@ -138,7 +188,7 @@ function ProductCard({ product: p, lent, members, panel, onOpen, onClose, reload
       {!panel && (
         <div className="btn-row">
           <button className="btn-primary" onClick={() => onOpen('sell')}>Vender</button>
-          <button className="btn-secondary" onClick={() => onOpen('lend')}>Se lo lleva…</button>
+          {!isConsumable(p) && <button className="btn-secondary" onClick={() => onOpen('lend')}>Se lo lleva…</button>}
         </div>
       )}
     </div>

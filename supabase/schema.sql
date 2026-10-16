@@ -177,7 +177,9 @@ create table products (
   stock      int not null default 0,  -- can go below 0 if she sells more than she counted
   min_stock  int not null default 3 check (min_stock >= 0),  -- warn at this many or fewer
   active     boolean not null default true,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- clothes hang on the rack and can be lent; consumables (agua, granola) can't
+  kind       text not null default 'clothes' check (kind in ('clothes', 'consumable'))
 );
 
 -- unit_price is copied from the product at the moment of the sale.

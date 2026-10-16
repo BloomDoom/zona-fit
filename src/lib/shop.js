@@ -9,8 +9,20 @@
 import { supabase } from './supabase.js'
 import { unwrap } from './useLoad.js'
 
+// What's left of a product: on the rack + with the chicas. Clothes a chica
+// took are still stock until she buys them. (p.lent comes from withLent.)
+export const stockLeft = (p) => p.stock + (p.lent || 0)
+
 // Each product has its own minimum (min_stock, "avisar cuando queden").
-export const isLow = (p) => p.stock <= p.min_stock
+export const isLow = (p) => stockLeft(p) <= p.min_stock
+
+export const isConsumable = (p) => p.kind === 'consumable'
+
+// Products as they come, plus p.lent: how many are with the chicas.
+export function withLent(products, loans) {
+  const lent = lentByProduct(loans)
+  return products.map((p) => ({ ...p, lent: lent[p.id] || 0 }))
+}
 
 export function loadProducts() {
   return unwrap(supabase.from('products').select('*').order('name'))
@@ -19,8 +31,11 @@ export function loadProducts() {
 // Products still sold that are at or below their minimum, fewest first.
 // (For the warning on Inicio and the dot on the Tienda tab.)
 export async function loadLowStock() {
-  const products = await unwrap(supabase.from('products').select('id, name, stock, min_stock').eq('active', true))
-  return products.filter(isLow).sort((a, b) => a.stock - b.stock)
+  const [products, loans] = await Promise.all([
+    unwrap(supabase.from('products').select('id, name, stock, min_stock').eq('active', true)),
+    loadOpenLoans().catch(() => []),
+  ])
+  return withLent(products, loans).filter(isLow).sort((a, b) => stockLeft(a) - stockLeft(b))
 }
 
 // Sales between two dates (both included), not removed, newest first.
@@ -63,7 +78,7 @@ export const saleTotal = (sale) => sale.qty * sale.unit_price
 
 // Out of stock first, then running low, then the rest; A–Z inside each.
 export function sortByStock(products) {
-  const rank = (p) => (p.stock <= 0 ? 0 : isLow(p) ? 1 : 2)
+  const rank = (p) => (stockLeft(p) <= 0 ? 0 : isLow(p) ? 1 : 2)
   return [...products].sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, 'es'))
 }
 

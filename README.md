@@ -88,7 +88,12 @@ changes never touch past months.
 functions `record_sale`, `undo_sale`, `restock`, `undo_restock` and `add_stock`,
 which change the sale or purchase and the stock together. Each sale keeps the
 price it was sold at. Each product has its own `min_stock` (warning on Inicio
-and a dot on the Tienda tab).
+and a dot on the Tienda tab). What's left of a product counts the rack plus
+what the chicas have (`stockLeft`): clothes with a chica are still stock
+until she buys them. Each product is `kind` clothes or consumable (agua,
+granola: they can't be lent). Tienda groups the products in four sections
+that start closed ("Ver"): Prendas con las chicas, Perchero (clothes on the
+rack), Consumibles and Sin stock (nothing on the rack or with the chicas).
 
 **Shop wallet (Billetera):** the shop's money is kept apart from the fees.
 `shop_moves` holds what isn't a sale: purchase (stock that arrived), withdrawal
