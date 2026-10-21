@@ -16,6 +16,8 @@ vite.config.js              build settings + PWA manifest and service worker
 supabase/
   schema.sql                all tables, functions and security rules (run once)
   migrations/               dated changes for a database made with an older schema.sql
+    2026-10-21-gym-users.sql           only gym logins see the gym's data
+    2026-10-21-gym-users-rollback.sql  undoes it (any login sees everything again)
   reset-test-data.sql       ⚠️ erases all data (only before loading real data)
 src/
   main.jsx                  starts React, the router and the crash screen
@@ -113,7 +115,9 @@ purchases − withdrawals.
    date order.)
 3. **Authentication → Sign In / Providers**: turn **off** "Allow new users to sign up".
 4. **Authentication → Users → Add user → Create new user**: Nadia's email and a
-   password, with "Auto Confirm User" ticked.
+   password, with "Auto Confirm User" ticked. Then, in the **SQL Editor**, run
+   `insert into gym_users select id from auth.users;` so her login can see the
+   gym's data.
 5. **Project Settings → API Keys**: copy the Project URL and the **publishable**
    key (or the legacy "anon" key).
 
@@ -162,6 +166,12 @@ Rows with problems are shown before anything is saved. Names that already
 exist are skipped, so importing the same file twice is safe.
 
 ## Good to know
+- **Who sees the gym's data:** only logins listed in `gym_users`. A new
+  login sees nothing until you run `insert into gym_users values ('<id>');`
+  (the id is in Authentication → Users). Undo:
+  `migrations/2026-10-21-gym-users-rollback.sql`. The Heladera app
+  (`../heladera`) shares this Supabase project, in its own schema `heladera`;
+  its logins aren't in `gym_users`.
 - **Keep-alive:** Supabase pauses free projects after 7 days without use.
   `keep-alive.yml` pings it every 3 days. GitHub turns off scheduled workflows
   in repos with no commits for 60 days and emails you first. If that happens,

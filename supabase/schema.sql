@@ -505,9 +505,24 @@ grant execute on function price_for(bigint, date), ensure_charges(date),
 
 
 -- ───────────────────────── Security (Row Level Security)
--- Sign-ups are turned off in Supabase, so the only account that can log
--- in is Nadia's. Rule: logged-in users can do everything, visitors who
--- aren't logged in can't see or change anything.
+-- Sign-ups are turned off in Supabase: logins are created by hand. The
+-- Heladera app (../heladera) shares this project and has its own logins,
+-- so being logged in isn't enough. Rule: logins listed in gym_users can
+-- do everything, anyone else (other logins, visitors) can't see or change
+-- anything.
+--
+-- ⚠️ After creating Nadia's login, run in the SQL Editor:
+--   insert into gym_users select id from auth.users;
+create table gym_users (
+  user_id uuid primary key references auth.users(id) on delete cascade
+);
+
+-- Each login can only see its own row, which is all the rules below need.
+alter table gym_users enable row level security;
+create policy "Users see their own row" on gym_users
+  for select to authenticated using (user_id = (select auth.uid()));
+grant select on gym_users to authenticated;
+
 do $$
 declare t text;
 begin
@@ -515,8 +530,9 @@ begin
     'slot_enrollments', 'enrollments','sessions', 'absences', 'charges', 'payments', 'products', 'sales', 'shop_moves', 'loan_moves']
   loop
     execute format('alter table %I enable row level security', t);
-    execute format('create policy "Logged-in user has full access" on %I
-                    for all to authenticated using (true) with check (true)', t);
+    execute format('create policy "Gym users have full access" on %I for all to authenticated
+                    using (exists (select 1 from gym_users where user_id = (select auth.uid())))
+                    with check (exists (select 1 from gym_users where user_id = (select auth.uid())))', t);
     execute format('grant select, insert, update on %I to authenticated', t);
   end loop;
 end $$;
