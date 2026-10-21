@@ -19,6 +19,15 @@ create table gym_users (
 
 insert into gym_users (user_id) select id from auth.users;
 
+-- If this runs again after the rollback, Heladera logins exist too: they
+-- must not become gym users.
+do $$
+begin
+  if to_regclass('heladera.household_members') is not null then
+    execute 'delete from gym_users where user_id in (select user_id from heladera.household_members)';
+  end if;
+end $$;
+
 -- Each login can only see its own row, which is all the rules below need.
 alter table gym_users enable row level security;
 create policy "Users see their own row" on gym_users
