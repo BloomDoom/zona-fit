@@ -13,7 +13,8 @@ async function loadMembers() {
     unwrap(
       supabase
         .from('members')
-        .select('*, plans(name), slot_enrollments(end_date, group_slots(group_id, weekday, start_time)), enrollments(group_id, end_date)'),
+        .select('*, plans(name), slot_enrollments(end_date, group_slots(group_id, weekday, start_time)), enrollments(group_id, end_date)')
+        .is('deleted_at', null),
     ),
     unwrap(supabase.from('groups').select('id, name').eq('active', true).order('name')),
     unwrap(supabase.from('plans').select('id, name').eq('active', true).order('name')),

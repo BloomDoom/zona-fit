@@ -129,12 +129,13 @@ export function sessionPath(session) {
 
 // Members in a class on a given date: enrolled then, and still active
 // (or absent from that class, so old attendance still shows them).
-// `enrollments` rows need start_date, end_date and members(id, name, active).
+// Deleted members ("Borrar") never show, not even in old attendance.
+// `enrollments` rows need start_date, end_date and members(id, name, active, deleted_at).
 export function membersOn(enrollments, date, keepIds = new Set()) {
   const byId = new Map()
   for (const e of enrollments) {
     const enrolled = e.start_date <= date && (!e.end_date || e.end_date > date)
-    if (enrolled && (e.members.active || keepIds.has(e.members.id))) byId.set(e.members.id, e.members)
+    if (enrolled && !e.members.deleted_at && (e.members.active || keepIds.has(e.members.id))) byId.set(e.members.id, e.members)
   }
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, 'es'))
 }

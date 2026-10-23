@@ -11,7 +11,7 @@ import { supabase } from './supabase.js'
 import { unwrap } from './useLoad.js'
 import { membersOn } from './sessions.js'
 
-const MEMBER = 'members(id, name, active)'
+const MEMBER = 'members(id, name, active, deleted_at)'
 
 // All sign-ups (current and past, for old attendance) of some classes.
 //   bySlot: [{ slot_id, start_date, end_date, members, group_slots: { group_id } }]

@@ -19,7 +19,8 @@ export const isConsumable = (p) => p.kind === 'consumable'
 export const stockLeft = (p) => p.stock + (isConsumable(p) ? 0 : p.lent || 0)
 
 // Each product has its own minimum (min_stock, "avisar cuando queden").
-export const isLow = (p) => stockLeft(p) <= p.min_stock
+// Nothing left (0) isn't "low": it's already in the Sin stock section.
+export const isLow = (p) => stockLeft(p) > 0 && stockLeft(p) <= p.min_stock
 
 // Products as they come, plus p.lent: how many are with the chicas.
 export function withLent(products, loans) {
@@ -31,7 +32,7 @@ export function loadProducts() {
   return unwrap(supabase.from('products').select('*').order('name'))
 }
 
-// Products still sold that are at or below their minimum, fewest first.
+// Products still sold that are at or below their minimum (not 0), fewest first.
 // (For the warning on Inicio and the dot on the Tienda tab.)
 export async function loadLowStock() {
   const [products, loans] = await Promise.all([

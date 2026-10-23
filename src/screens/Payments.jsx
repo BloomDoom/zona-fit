@@ -16,11 +16,14 @@ async function loadMonth(month) {
   const charges = await unwrap(
     supabase
       .from('charges')
-      .select('*, members(id, name, start_date), plans(id, name), payments(*)')
+      .select('*, members(id, name, start_date, deleted_at), plans(id, name), payments(*)')
       .eq('month', month)
       .is('deleted_at', null),
   )
-  return { skipped, charges: sortByStatus(charges.map(withStatus)) }
+  // A deleted chica ("Borrar") isn't listed and owes nothing; what she
+  // already paid still counts in the total.
+  const kept = charges.map(withStatus).filter((c) => !c.members.deleted_at || c.paid > 0)
+  return { skipped, charges: sortByStatus(kept) }
 }
 
 export default function Payments() {
@@ -40,9 +43,10 @@ export default function Payments() {
   const charges = result.data?.charges
   const expected = charges?.reduce((sum, c) => sum + c.amount, 0) ?? 0
   const collected = charges?.reduce((sum, c) => sum + Math.min(c.paid, c.amount), 0) ?? 0
-  const owing = charges?.filter((c) => c.status !== 'paid').length ?? 0
+  const listed = charges?.filter((c) => !c.members.deleted_at)
+  const owing = listed?.filter((c) => c.status !== 'paid').length ?? 0
   const byMethod = charges ? totalsByMethod(charges) : []
-  const shown = search ? charges?.filter((c) => normalize(c.members.name).includes(normalize(search))) : charges
+  const shown = search ? listed?.filter((c) => normalize(c.members.name).includes(normalize(search))) : listed
 
   return (
     <main className="screen">

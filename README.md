@@ -18,6 +18,7 @@ supabase/
   migrations/               dated changes for a database made with an older schema.sql
     2026-10-21-gym-users.sql           only gym logins see the gym's data
     2026-10-21-gym-users-rollback.sql  undoes it (any login sees everything again)
+    2026-10-23-borrar-chicas.sql       members.deleted_at (Borrar a chica)
   reset-test-data.sql       ⚠️ erases all data (only before loading real data)
 src/
   main.jsx                  starts React, the router and the crash screen
@@ -90,7 +91,7 @@ changes never touch past months.
 functions `record_sale`, `undo_sale`, `restock`, `undo_restock` and `add_stock`,
 which change the sale or purchase and the stock together. Each sale keeps the
 price it was sold at. Each product has its own `min_stock` (warning on Inicio
-and a dot on the Tienda tab). What's left of a product counts the rack plus
+and a dot on the Tienda tab; a product at 0 doesn't warn, it's in Sin stock). What's left of a product counts the rack plus
 what the chicas have (`stockLeft`): clothes with a chica are still stock
 until she buys them. Each product is `kind` clothes or consumable (agua,
 granola). A chica can take a consumable and pay later ("Se lo lleva sin
@@ -181,6 +182,9 @@ exist are skipped, so importing the same file twice is safe.
   iPhone it opens the Share sheet: save to Files/Drive or email it). Do it monthly.
 - **Nothing is ever deleted** by the app: payments, fees, absences and sales get
   a `deleted_at` date instead, and the database doesn't even allow deleting them.
+  Borrar a chica works the same way: she gets `deleted_at` and is hidden from
+  every list (Socios, Pagos, asistencia); what she already paid still counts.
+  Her page (e.g. from Tienda) shows "Borrada" with a button to bring her back.
 - **Updates:** after a deploy, the phone picks up the new version the next time
   the app is opened (sometimes it takes a second open).
 - **Logo:** the icons in `public/` and `logo-mark.png` (the woman on the round

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { unwrap, useLoad } from '../lib/useLoad.js'
 import { formatDate, formatTime, todayISO, weekdayName } from '../lib/format.js'
@@ -57,7 +57,9 @@ export default function MemberDetail() {
           <>
             <ViewMember member={result.data.member} onEdit={() => setEditing(true)} reload={result.reload} />
             {/* key: reload the fees after editing (e.g. a new plan) */}
-            <MemberPayments key={result.data.member.plan_id} memberId={result.data.member.id} />
+            {!result.data.member.deleted_at && (
+              <MemberPayments key={result.data.member.plan_id} memberId={result.data.member.id} />
+            )}
           </>
         ))}
     </main>
@@ -66,6 +68,7 @@ export default function MemberDetail() {
 
 function ViewMember({ member, onEdit, reload }) {
   const showToast = useToast()
+  const navigate = useNavigate()
   const [error, setError] = useState('')
   const times = currentTimes(member)
   const pending = current(member.enrollments) // whole classes, times not chosen yet
@@ -88,6 +91,50 @@ function ViewMember({ member, onEdit, reload }) {
     if (await setActive(active)) {
       showToast(active ? `${member.name} volvió a estar activa` : `${member.name} dada de baja`, () => setActive(!active))
     }
+  }
+
+  // "Borrar": she's hidden everywhere (see members.deleted_at in schema.sql).
+  // Undo brings her back as she was, active or de baja.
+  async function remove() {
+    setError('')
+    try {
+      await unwrap(supabase.from('members').update({ active: false, deleted_at: new Date().toISOString() }).eq('id', member.id))
+    } catch (err) {
+      setError(saveErrorMessage(err))
+      return
+    }
+    navigate('/members')
+    showToast(`${member.name} borrada`, async () => {
+      await unwrap(supabase.from('members').update({ active: member.active, deleted_at: null }).eq('id', member.id))
+      navigate(`/members/${member.id}`)
+    })
+  }
+
+  async function restore() {
+    setError('')
+    try {
+      await unwrap(supabase.from('members').update({ deleted_at: null }).eq('id', member.id))
+      reload()
+      showToast(`${member.name} recuperada (de baja)`)
+    } catch (err) {
+      setError(saveErrorMessage(err))
+    }
+  }
+
+  if (member.deleted_at) {
+    return (
+      <>
+        <h1>
+          {member.name}
+          <span className="badge">Borrada</span>
+        </h1>
+        <section className="section stack">
+          <button className="btn-secondary" onClick={restore}>Recuperarla</button>
+          <p className="muted">Vuelve a la lista de chicas como “de baja”, con todo su historial.</p>
+          {error && <p className="error" role="alert">{error}</p>}
+        </section>
+      </>
+    )
   }
 
   return (
@@ -151,6 +198,8 @@ function ViewMember({ member, onEdit, reload }) {
           {member.active ? 'Dar de baja' : 'Volver a darla de alta'}
         </button>
         {member.active && <p className="muted">Dá de baja a quien deja de venir. Su historial se guarda.</p>}
+        <button className="btn-secondary" onClick={remove}>Borrar</button>
+        <p className="muted">Borrar la saca de todas las listas. Lo que ya pagó sigue contando en la caja.</p>
         {error && <p className="error" role="alert">{error}</p>}
       </section>
     </>

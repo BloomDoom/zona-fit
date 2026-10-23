@@ -5,7 +5,7 @@
 --   * Money is stored as whole pesos (integer). No centavos.
 --   * Months are stored as a date on the 1st (2026-03-01 = March 2026).
 --   * Weekdays: 1 = Monday ... 7 = Sunday (ISO standard).
---   * Payments, charges, absences and sales are never deleted: they get a
+--   * Payments, charges, absences, sales and members are never deleted: they get a
 --     deleted_at timestamp instead ("soft delete"), so history survives.
 --   * Table and column names are in English (like the code); everything
 --     Nadia reads on screen is in Spanish.
@@ -78,7 +78,8 @@ create table members (
   plan_id         bigint references plans(id),
   active          boolean not null default true,
   start_date      date not null default current_date,
-  created_at      timestamptz not null default now()
+  created_at      timestamptz not null default now(),
+  deleted_at      timestamptz  -- "Borrar": hidden everywhere (active is false too)
 );
 
 -- Which weekly times (one day + hour of a class) a member goes to, for
