@@ -98,7 +98,8 @@ granola). A chica can take a consumable and pay later ("Se lo lleva sin
 pagar": saved in `loan_moves` like clothes, with only "Pagó"); it stops
 counting as stock as soon as she takes it. Tienda groups the products in
 four sections that start closed ("Ver"): Lo que tienen las chicas, Perchero
-(clothes on the rack), Consumibles and Sin stock (nothing left).
+(clothes on the rack), Consumibles and Sin stock (nothing left). Each
+section, once open, has its own search box.
 
 **Shop wallet (Billetera):** the shop's money is kept apart from the fees.
 `shop_moves` holds what isn't a sale: purchase (stock that arrived), withdrawal

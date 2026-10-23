@@ -1571,6 +1571,9 @@ button.shop-section-row:active {
 .shop-sections .card-list {
   margin: 0.75rem 0 0.5rem;
 }
+.shop-section-search {
+  margin-top: 0.75rem;
+}
 
 /* −  2 · $ 3.000  + */
 .qty-row {

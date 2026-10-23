@@ -8,6 +8,7 @@ import {
   recordSale, saleTotal, sortByStock, stockLeft, undoLoanMove, undoSale, withLent,
 } from '../lib/shop.js'
 import { saveErrorMessage } from '../lib/errors.js'
+import { normalize } from '../lib/groups.js'
 import { useToast } from '../components/Toast.jsx'
 import LoadState from '../components/LoadState.jsx'
 import LoanCard from '../components/LoanCard.jsx'
@@ -92,26 +93,30 @@ export default function Shop() {
           ) : (
             <div className="shop-sections">
               <ShopSection title="Lo que tienen las chicas" count={plural(withChicas.length, 'chica', 'chicas')}
-                empty={withChicas.length === 0 && 'nada'}>
-                <ul className="card-list">
-                  {withChicas.map((m) => (
-                    <li key={m.member_id}>
-                      <LoanCard member={m} reload={result.reload} />
-                    </li>
-                  ))}
-                </ul>
+                empty={withChicas.length === 0 && 'nada'} items={withChicas}
+                searchText={(m) => [m.member_name, ...m.items.map((i) => i.product_name)].join(' ')}
+                placeholder="Buscar chica o prenda">
+                {(list) => (
+                  <ul className="card-list">
+                    {list.map((m) => (
+                      <li key={m.member_id}>
+                        <LoanCard member={m} reload={result.reload} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </ShopSection>
               <ShopSection title="Perchero" count={plural(rack.length, 'prenda', 'prendas')}
-                empty={rack.length === 0 && 'vacío'}>
-                {productList(rack)}
+                empty={rack.length === 0 && 'vacío'} items={rack}>
+                {productList}
               </ShopSection>
               <ShopSection title="Consumibles" count={plural(consumables.length, 'producto', 'productos')}
-                empty={consumables.length === 0 && 'ninguno con stock'}>
-                {productList(consumables)}
+                empty={consumables.length === 0 && 'ninguno con stock'} items={consumables}>
+                {productList}
               </ShopSection>
               <ShopSection title="Sin stock" count={plural(outOfStock.length, 'producto', 'productos')}
-                empty={outOfStock.length === 0 && 'ninguno'} warn={outOfStock.length > 0}>
-                {productList(outOfStock)}
+                empty={outOfStock.length === 0 && 'ninguno'} warn={outOfStock.length > 0} items={outOfStock}>
+                {productList}
               </ShopSection>
             </div>
           )}
@@ -136,8 +141,12 @@ export default function Shop() {
 
 // One closed section: "Perchero · 10 prendas ········ Ver". The whole row
 // opens it. With nothing inside it only says so (e.g. "Sin stock · ninguno").
-function ShopSection({ title, count, empty, warn, children }) {
+// Open, it has its own search box on top: `children(list)` gets only the
+// `items` whose `searchText` (the product name by default) has the text.
+function ShopSection({ title, count, empty, warn, items, searchText = (p) => p.name, placeholder = 'Buscar producto', children }) {
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const shown = search ? items.filter((item) => normalize(searchText(item)).includes(normalize(search))) : items
   if (empty) {
     return (
       <div className="shop-section-row">
@@ -151,7 +160,19 @@ function ShopSection({ title, count, empty, warn, children }) {
         <span><strong>{title}</strong> <span className="muted">· {count}</span></span>
         <span className="shop-section-see">{open ? 'Ocultar' : 'Ver'}</span>
       </button>
-      {open && children}
+      {open && (
+        <>
+          <input
+            type="search"
+            className="shop-section-search"
+            placeholder={placeholder}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            aria-label={`${placeholder} en ${title}`}
+          />
+          {shown.length > 0 ? children(shown) : <p className="empty">Nada con “{search.trim()}”.</p>}
+        </>
+      )}
     </section>
   )
 }
